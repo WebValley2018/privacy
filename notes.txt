@@ -1,0 +1,3 @@
+first smart contract: https://www.ethereum.org/greeter
+
+ethereum testnet: https://www.rinkeby.io/#stats
