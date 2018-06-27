@@ -6,4 +6,10 @@ Below are all the queries ran on the database in order to set it up
 CREATE USER Tovel IDENTIFIED BY 'tovelwaterdoggo';
 GRANT ALL PRIVILEGES ON *.* TO 'Tovel';
 CREATE DATABASE Tovel CHARACTER SET utf8 COLLATE utf8_bin;
+CREATE TABLE `Token` (
+  `TokenValue` text COLLATE utf8_bin NOT NULL,
+  `TTL` int(11) NOT NULL,
+  `CreationDate` bigint(20) NOT NULL,
+  `User` text COLLATE utf8_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 ```
