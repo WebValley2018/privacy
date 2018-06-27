@@ -12,4 +12,12 @@ CREATE TABLE `Token` (
   `CreationDate` bigint(20) NOT NULL,
   `User` text COLLATE utf8_bin NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+CREATE TABLE `Users` (
+  `Name` text COLLATE utf8_bin NOT NULL,
+  `Surname` text COLLATE utf8_bin NOT NULL,
+  `Mail` text COLLATE utf8_bin NOT NULL,
+  `ID` text COLLATE utf8_bin NOT NULL,
+  `Salt` text COLLATE utf8_bin NOT NULL,
+  `Organization` text COLLATE utf8_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 ```
