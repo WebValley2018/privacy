@@ -3,7 +3,7 @@ from uuid import uuid4
 import secrets
 from collections import namedtuple
 
-namedtuple('TokenTuple', 'token_value, act_time, dl_time, user')  # tuple for storing the tuple
+namedtuple('TokenTuple', 'token_value, act_time, dl_time, user')  # tuple for storing the Token
 
 
 class Token:
@@ -13,7 +13,7 @@ class Token:
    CLASS TOKEN:
    -self.act_time = time of creation of the token
    -self.ttl = expiration date of the token
-   -self.token_length = length of the token
+   -self.token_length = length of the tokenK
    -self.token_value = value of the token
    -self.user = id of the user which created the token
 
@@ -65,6 +65,3 @@ class Token:
     def get_token(self):  # get named tuple which stores self.token_value, self.act_time, self.dl_time, self.user
         tkn = namedtuple('TokenTuple', 'token_value, act_time, dl_time, user')  # named tuple "TokenTuple"
         return tkn(self.token_value, self.act_time, self.dl_time, self.user)
-
-
-
