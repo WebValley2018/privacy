@@ -31,7 +31,7 @@ class Token:
      4. token_data -> tuple of 4 elements, if token_data is not None token_value, creation_date, dl_time, user of the class 
             will be get value of token_data
    """
-    def __init__(self, token_length=16, time_delta=15, user=str(uuid4()), token_data=None):  # timedelta is in minutes
+    def __init__(self, token_length=16, time_delta=15, user=None, token_data=None):  # timedelta is in minutes
         if token_data is None:  # if token_data is not provided in arguments initialize with custom values
             self.creation_date = datetime.now()  # time of creation of the token
             self.dl_time = self.creation_date + timedelta(minutes=time_delta)  # expiration date of the token
