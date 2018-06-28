@@ -20,4 +20,5 @@ CREATE TABLE `Users` (
   `Salt` text COLLATE utf8_bin NOT NULL,
   `Organization` text COLLATE utf8_bin NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+create table Sessions(ID text not null, UserID text not null, CreationDate Integer not null, ExpirationDate Integer not null);
 ```
