@@ -15,6 +15,6 @@ class Ethereum:
         pass
 
     def get_user(self, id):
-        h_pw = ''  # as long the blockchain isn't working the hashed pw will be an empty string
-        user = namedtuple('userData', 'id, h_pw')
-        return user(id, h_pw)
+        h_pw = 'f5b47c9bfcee500f0f460a902b70f7909a96d03c3c8efe069262ba5312a14e7e52e655e0c32e3e6c2f4f6519e48e9501f9b2edee55cabb191f9c49eec8af07bd'  # as long the blockchain isn't working the hashed pw will be a dummy string
+        user = namedtuple('user_data', 'user_id', 'user_pwd_hash')
+        return user(id, "eutampieri", h_pw)
