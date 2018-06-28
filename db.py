@@ -1,5 +1,6 @@
 import mysql.connector as mariadb
 from user import User
+from collections import namedtuple
 from token import Token
 
 
@@ -23,11 +24,12 @@ class DB:
         self.mariadb_connection = mariadb.connect(user=user, password=password, database=database, host=host)
         self.cursor = self.mariadb_connection.cursor()
 
-    def get_user_from_id(self, id, hash_pw):  # get user information, the user class has no pw, could raise errors
+    def get_user_from_id(self, id):  # get user information, the user class has no pw, could raise errors
         self.cursor.execute("SELECT Name, Surname, Organization, Mail, Trusted, ID FROM Users WHERE ID=%s", (id,))
         for i in self.cursor:  # before passing the strings to the user class they are decoded
-            user = User(i[0].decode('utf-8'), i[1].decode('utf-8'), i[2].decode('utf-8'), i[3].decode('utf-8'), None, i[4], i[5].decode('utf-8'))
-            return user
+            user = namedtuple('TokenTuple', 'token_value, creation_date, dl_time, user')  # construct with named tuple
+            new_user = User(user(i[0].decode('utf-8'), i[1].decode('utf-8'), i[2].decode('utf-8'), i[3].decode('utf-8'), i[4], i[5].decode('utf-8')))
+            return new_user
 
     def check_user(self, id):
         self.cursor.execute("SELECT count(1) FROM Users WHERE ID=%s", (id,))

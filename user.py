@@ -1,6 +1,9 @@
 from uuid import uuid4
 import hashlib
 from time import sleep
+from collections import namedtuple
+
+namedtuple('UserTuple', 'name, surname, organization, mail, trust, id')  # tuple for storing the User
 
 
 class User:
@@ -25,6 +28,7 @@ class User:
          5. get_trust -> get trust level of the user
          6. set_pw_hash -> set new hashed password
          7. verify_pw -> method taking as argument a string verifying the validity of a password
+         8. get_user -> get user data in form of a namedtuple
 
     -INITIALIZATION:
          1. name -> name of the user
@@ -33,20 +37,30 @@ class User:
          4. mail -> mail of the user
          5. pw -> password of the user
          6. trust -> trust level of the user
+         7. id -> user id, if not provided it is created
+         8. user_data -> named tuple, if it is not none the class is initialized with its values
     """
-    def __init__(self, name, surname, organization, mail, pw, trust=False, id=None):
-        self.name = name
-        self.surname = surname
-        self.mail = mail
-        self.organization = organization
-        if id is None:
-            self.id = str(uuid4())
+    def __init__(self, name='', surname='', organization='', mail='', pw='', trust=False, id=None, user_data=None):
+        if user_data is not None:
+            self.name = user_data.name
+            self.surname = user_data.surname
+            self.organization = user_data.organization
+            self.mail = user_data.mail
+            self.trust = user_data.trust
+            self.id = user_data.id
         else:
-            self.id = id
-        if pw is not None:
-            self.salt = str(uuid4().hex)
-            self.h_pw = hashlib.sha512((pw + self.salt).encode("utf-8")).hexdigest()
-        self.trust = trust
+            self.name = name
+            self.surname = surname
+            self.mail = mail
+            self.organization = organization
+            if id is None:
+                self.id = str(uuid4())
+            else:
+                self.id = id
+            if pw is not None:
+                self.salt = str(uuid4().hex)
+                self.h_pw = hashlib.sha512((pw + self.salt).encode("utf-8")).hexdigest()
+            self.trust = trust
 
     def __string__(self):
         return self.name + " " + self.surname
@@ -71,11 +85,18 @@ class User:
         self.h_pw = hashlib.sha512((pw + self.salt).encode("utf-8")).hexdigest()
 
     def verify_pw(self, pw):  # method taking as argument a string verifying the validity of a password
-        if self.pw is None:
+        print(pw)
+        print(self.salt)
+        print(self.h_pw)
+        if self.h_pw is None:
             return False
         if hashlib.sha512((pw + self.salt).encode("utf-8")).hexdigest() == self.h_pw:
             return True
         else:
             sleep(1)
             return False
+
+    def get_user(self):  # get user as named tuple
+        user = namedtuple('UserTuple', 'name, surname, organization, mail, trust, id')
+        return user(self.name, self.surname, self.organization, self.mail, self.trust, self.id)
 
