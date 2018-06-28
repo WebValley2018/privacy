@@ -1,4 +1,6 @@
-## This docs folder is for the website
+## This docs folder contains the information for the website.
 
-We are using Github Pages for the website for the privacy section
+We are using Github Pages for the privacy website.
+
+You can access the site at this link: https://webvalley2018.github.io/privacy/
 
