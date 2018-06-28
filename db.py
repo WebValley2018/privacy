@@ -1,6 +1,6 @@
 import mysql.connector as mariadb
-from user_class import User
-from token_generator import Token
+from user import User
+from token import Token
 
 
 class DB:
