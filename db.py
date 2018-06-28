@@ -13,10 +13,11 @@ class DB:
     -METHODS:
         1. get_user_from_id -> get user class from user id --> PROBLEM!! the created user class doesn't has pw
         2. check_user -> check if user with given id exists
+        3. check_token -> check if token with given value exists
 
     -INITIALIZATION:
         1. user -> user of db
-        2. password -> password of db
+        2. password -> password of dbK
         3. database -> db
         4. host -> host in db
     """
@@ -36,6 +37,7 @@ class DB:
         for i in self.cursor:
             return True if i[0] == 1 else False
     
-    def check_token(self, token_name):
-        """Check wether the given token ID is valid or not"""
-        return True
+    def check_token(self, token_value):
+        self.cursor.execute("SELECT count(1) FROM Token WHERE TokenValue=%s", (token_value,))
+        for i in self.cursor:
+            return True if i[0] == 1 else False
