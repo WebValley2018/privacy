@@ -12,12 +12,8 @@ def mainPage():
     if database.check_token(request.cookies.get("tovel_token")):
         return "User page"
     else:
-        return """<form action="login" method="POST">
-        Username: <input type="text" name="username"><br>
-        Password: <input type="password" name="password"><br>
-        <input type="submit">
-        </form>
-        """
+        with open("static-assets/login.html") as f:
+            return f.read()
 
 @app.route("/logout")
 def logoutPage():
