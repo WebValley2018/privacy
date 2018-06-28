@@ -1,17 +1,6 @@
 from flask import Flask, request
+from db import DB
 app = Flask(__name__)
-
-class DB:
-    """Dummy DB class"""
-    def init(self):
-        pass
-    
-    def check_token(self, session_id):
-        return True
-    
-    def get_user_from_token(self, token_id):
-        user_id="qwertuiop"
-        return user_id
 
 
 database = DB()
@@ -27,8 +16,10 @@ def mainPage():
 def logoutPage():
     return "Reditrect to the /"
 
-@app.route("/login")
+@app.route("/login", methods=["POST"])
 def loginPage():
+    username = request.form["username"]
+    password = request.form["password"]
     return "Check login and then redirect as needed"
 
 app.run(host='0.0.0.0')
