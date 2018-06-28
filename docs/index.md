@@ -10,4 +10,4 @@ This is the webpage for the Privacy team.
 - Jakob Nogler
 - Ashlynn Gallagher
 
-<img src="../notes and stuff/MVPDiagram.JPG" alt="hi" class="inline"/>
+<img src="../notes and stuff/MVPDiagram.JPG" alt="minimum viable product diagram" class="inline"/>
