@@ -7,3 +7,4 @@
 | Smart contracts setup infos | https://www.ethereum.org/cli |
 | Ethereum testnet | https://www.rinkeby.io/#stats |
 | Ethereum and Python | http://ecomunsing.com/tutorial-controlling-ethereum-with-python|
+| Differential Privassy Notes | https://docs.google.com/document/d/1tFrjj9pZkwENx7H7TmZSEqW0oPPE6bgBUP9VCN1yRVo/edit |
