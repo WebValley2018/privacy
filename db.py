@@ -36,8 +36,15 @@ class DB:
         self.cursor.execute("SELECT count(1) FROM Users WHERE ID=%s", (id,))
         for i in self.cursor:
             return True if i[0] == 1 else False
+    
+    def check_token(self, token_value):
+        self.cursor.execute("SELECT count(1) FROM Token WHERE TokenValue=%s", (token_value,))
+        for i in self.cursor:
+            # Apart from the fact that the token must exist, it also must not be expired
+            return True if i[0] == 1 else False
 
     def get_id_from_username(self, username):
         self.cursor.execute("SELECT ID FROM Users WHERE Username=%s", (username,))
         for i in self.cursor:
             return i[0].decode('utf-8')
+        return False
