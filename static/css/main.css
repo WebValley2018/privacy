@@ -3,10 +3,16 @@ label, input[type="button"]{
     display: block;
 }
 body{
-    padding: .5em;
+    padding: 1em;
     font-family: 'Source Sans Pro', sans-serif;
+    background-color: #ccc;
 }
 h1, h2, h3, h4, h5, h6{
     font-family: 'News Cycle', sans-serif;
     font-weight: bold;
+}
+.modal.middle{
+    max-width: 700px;
+    border-radius: .3em;
+    background-color: #fff;
 }
