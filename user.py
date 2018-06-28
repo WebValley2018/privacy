@@ -3,7 +3,7 @@ import hashlib
 from time import sleep
 from collections import namedtuple
 
-namedtuple('UserTuple', 'name, surname, organization, mail, trust, id')  # tuple for storing the User
+namedtuple('UserTuple', 'name, surname, username, organization, mail, trust, id')  # tuple for storing the User
 
 
 class User:
@@ -19,6 +19,7 @@ class User:
     -self.h_pw -> hashed password of the user
     -self.organization -> Organization which the user belongs to
     -self.trust -> trust level of the level
+    -self.username -> username of the user
 
     -METHODS:
          1. get_name -> get the name of the user
@@ -40,7 +41,7 @@ class User:
          7. id -> user id, if not provided it is created
          8. user_data -> named tuple, if it is not none the class is initialized with its values
     """
-    def __init__(self, name='', surname='', organization='', mail='', pw='', trust=False, id=None, user_data=None):
+    def __init__(self, name='', surname='', username='', organization='', mail='', pw='', trust=False, id=None, user_data=None):
         if user_data is not None:
             self.name = user_data.name
             self.surname = user_data.surname
@@ -48,9 +49,11 @@ class User:
             self.mail = user_data.mail
             self.trust = user_data.trust
             self.id = user_data.id
+            self.username = user_data.username
         else:
             self.name = name
             self.surname = surname
+            self.username = username
             self.mail = mail
             self.organization = organization
             if id is None:
@@ -97,6 +100,6 @@ class User:
             return False
 
     def get_user(self):  # get user as named tuple
-        user = namedtuple('UserTuple', 'name, surname, organization, mail, trust, id')
-        return user(self.name, self.surname, self.organization, self.mail, self.trust, self.id)
+        user = namedtuple('UserTuple', 'name, surname, username, organization, mail, trust, id')
+        return user(self.name, self.surname, self.username, self.organization, self.mail, self.trust, self.id)
 
