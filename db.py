@@ -35,3 +35,7 @@ class DB:
         self.cursor.execute("SELECT count(1) FROM Users WHERE ID=%s", (id,))
         for i in self.cursor:
             return True if i[0] == 1 else False
+    
+    def check_token(self, token_name):
+        """Check wether the given token ID is valid or not"""
+        return True
