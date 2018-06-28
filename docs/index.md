@@ -3,7 +3,7 @@ This is the webpage for the Privacy team.
 
 ## Members
 
-- Eugenio Tampiero
+- Eugenio Tampieri
 - Syamantak Payra
 - Rebecca Monti
 - Mattia Gallerati
