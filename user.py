@@ -50,6 +50,7 @@ class User:
             self.trust = user_data.trust
             self.id = user_data.id
             self.username = user_data.username
+            self.salt = user_data.salt
         else:
             self.name = name
             self.surname = surname
@@ -83,23 +84,19 @@ class User:
     def get_trust_level(self):  # get the trust level of the user
         return self.trust
 
-    def set_pw_hash(self, pw):
-        self.salt = str(uuid4().hex)
-        self.h_pw = hashlib.sha512((pw + self.salt).encode("utf-8")).hexdigest()
+    def set_pw_hash(self, h_pw):
+        self.h_pw = h_pw
 
     def verify_pw(self, pw):  # method taking as argument a string verifying the validity of a password
-        print(pw)
-        print(self.salt)
-        print(self.h_pw)
         if self.h_pw is None:
             return False
-        if hashlib.sha512((pw + self.salt).encode("utf-8")).hexdigest() == self.h_pw:
+        elif hashlib.sha512((pw + self.salt).encode("utf-8")).hexdigest() == self.h_pw:
             return True
         else:
             sleep(1)
             return False
 
     def get_user(self):  # get user as named tuple
-        user = namedtuple('UserTuple', 'name, surname, username, organization, mail, trust, id')
-        return user(self.name, self.surname, self.username, self.organization, self.mail, self.trust, self.id)
+        user = namedtuple('UserTuple', 'name, surname, username, organization, mail, trust, id, salt')
+        return user(self.name, self.surname, self.username, self.organization, self.mail, self.trust, self.id, self.salt)
 

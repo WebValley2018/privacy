@@ -1,7 +1,7 @@
 import mysql.connector as mariadb
 from user import User
 from collections import namedtuple
-from token import Token
+from auth_token import Token
 
 
 class DB:
@@ -27,10 +27,10 @@ class DB:
         self.cursor = self.mariadb_connection.cursor()
 
     def get_user_from_id(self, id):  # get user information, the user class has no pw, could raise errors
-        self.cursor.execute("SELECT Name, Surname, Username, Organization, Mail, Trusted, ID FROM Users WHERE ID=%s", (id,))
+        self.cursor.execute("SELECT Name, Surname, Username, Organization, Mail, Trusted, ID, Salt FROM Users WHERE ID=%s", (id,))
         for i in self.cursor:  # before passing the strings to the user class they are decoded
-            user = namedtuple('UserTuple', 'name, surname, username, organization, mail, trust, id')   # construct with named tuple
-            new_user = User(user(i[0].decode('utf-8'), i[1].decode('utf-8'), i[2].decode('utf-8'), i[3].decode('utf-8'), i[4].decode('utf-8'), i[5], i[6].decode('utf-8')))
+            user = namedtuple('UserTuple', 'name, surname, username, organization, mail, trust, id, salt')   # construct with named tuple
+            new_user = User(user_data=user(i[0].decode('utf-8'), i[1].decode('utf-8'), i[2].decode('utf-8'), i[3].decode('utf-8'), i[4].decode('utf-8'), i[5], i[6].decode('utf-8'), i[7].decode('utf-8')))
             return new_user
 
     def check_user(self, id):
@@ -39,6 +39,8 @@ class DB:
             return True if i[0] == 1 else False
     
     def check_token(self, token_value):
+        if token_value is None:
+            return False
         self.cursor.execute("SELECT count(1) FROM Token WHERE TokenValue=%s", (token_value,))
         for i in self.cursor:
             # Apart from the fact that the token must exist, it also must not be expired
