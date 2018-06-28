@@ -6,3 +6,4 @@ first smart contract: https://www.ethereum.org/greeter
 	for setup infos: https://www.ethereum.org/cli
 
 ethereum testnet: https://www.rinkeby.io/#stats
+http://ecomunsing.com/tutorial-controlling-ethereum-with-python
