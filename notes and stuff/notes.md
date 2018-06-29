@@ -7,3 +7,4 @@
 | Smart contracts setup infos | https://www.ethereum.org/cli |
 | Ethereum testnet | https://www.rinkeby.io/#stats |
 | Ethereum and Python | http://ecomunsing.com/tutorial-controlling-ethereum-with-python|
+| Ethereum Gas Guide | https://blockgeeks.com/guides/ethereum-gas-step-by-step-guide/|
