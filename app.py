@@ -3,6 +3,7 @@ from db import DB
 from ethereum import Ethereum
 from auth_token import Token
 from user import User
+import utilities
 app = Flask(__name__)
 
 
@@ -56,9 +57,11 @@ def register_user():
         mail = request.form["mail"]
         trusted = True if "trusted" in request.form else False
         new_user = User(username=username, name=name, surname=surname, organization=organization, mail=mail, trust=trusted)
+        new_user_password = utilities.generate_password()
         if database.register_user(new_user):
             registration_outcome = '''<div class="alert alert-success"
-                                    role="alert">User registration was successful</div>'''
+                                    role="alert">User registration was successful. User's password is <b><pre>'''+ new_user_password + '''
+                                    </pre></b></div>'''
         else:
             registration_outcome = '''<div class="alert alert-danger"
                                     role="alert">User with same username already exists</div>'''
