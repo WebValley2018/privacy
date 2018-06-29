@@ -8,9 +8,12 @@ app = Flask(__name__)
 database = DB()
 ethereum=Ethereum()
 
+# Main page
+
 @app.route("/")
 def mainPage():
     if database.check_token(request.cookies.get("tovel_token")):
+        # If the user is logged in, let's display his 
         return "User page"
     else:
         with open("static-assets/login.html") as f:
