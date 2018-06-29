@@ -104,17 +104,3 @@ class DB:
         self.cursor.execute("INSERT INTO Administrators VALUES (%s, %s, %s, %s, %s, %s, %s);", (admin.id, admin.username, admin.name, admin.surname, admin.h_pw, admin.salt, admin.otp_key,))
         self.mariadb_connection.commit()
         return True
-
-    def prt(self):
-        self.cursor.execute("SELECT Name FROM Administrators")
-        for i in self.cursor:
-            print(i)
-
-
-db = DB()
-jakob = Admin('jiik', 'Jakob', 'Nogler', 'password')
-db.register_admin(jakob)
-db.prt()
-
-
-
