@@ -37,10 +37,10 @@ def mainPage():
 
 @app.route("/logout")
 def logoutPage():
+    database.set_token_ttl(request.cookies.get("tovel_token"))
     resp = make_response(redirect("/?logoutsuccess"))
     resp.set_cookie('tovel_token', '', expires=0)
-    return resp
-    #return "Redirect to the /"
+    return resp  # Redirect to the /
 
 
 @app.route("/login", methods=["POST"])
