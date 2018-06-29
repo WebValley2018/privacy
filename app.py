@@ -15,7 +15,7 @@ ethereum=Ethereum()
 def mainPage():
     if database.check_token(request.cookies.get("tovel_token")):
         # If the user is logged in, let's display his personal page
-        return "User page"
+        return 'User page <a href="logout">Logout</a>'
     else:
         with open("static-assets/login.html") as f:
             if "tovel_token" in request.cookies:
