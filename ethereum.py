@@ -36,3 +36,11 @@ class Ethereum:
         # Save on the blockchain the attempt_id and the outcome, that can be either True or False
         #
         pass
+
+    def report_login_failure(self):
+        # Save authentication outcome into the blockchain provided the authentication id
+        # attempt_id is the id of the event, same as above
+        #
+        # Save on the blockchain the attempt_id and the outcome, that can be either True or False
+        #
+        pass

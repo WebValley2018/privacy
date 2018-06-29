@@ -50,11 +50,28 @@ class DB:
             else:
                 return False
 
+    def check_user(self, username):
+        if username is None:
+            return False
+        self.cursor.execute("SELECT count(1) FROM Users WHERE Username=%s", (username,))
+        for i in self.cursor:
+            return True if i[0] else False
+
+    def check_mail(self, mail):
+        if mail is None:
+            return False
+        self.cursor.execute("SELECT count(1) FROM Users WHERE Mail=%s", (mail,))
+        for i in self.cursor:
+            return True if i[0] else False
+
     def get_id_from_username(self, username):
+        if not self.check_user(username):
+            return None
         self.cursor.execute("SELECT ID FROM Users WHERE Username=%s", (username,))
         for i in self.cursor:
+            print(i)
             return i[0].decode('utf-8')
-        return False
+        return None
     
     def register_token(self, token):  # register new token in the db
         self.cursor.execute("INSERT INTO Token VALUES (%s, %s, %s, %s);", (token.token_value, token.ttl, token.creation_date, token.user))
@@ -63,3 +80,9 @@ class DB:
     def set_token_ttl(self, token_value):
         self.cursor.execute("UPDATE Token SET TTL = 0 WHERE TokenValue = %s", (token_value,))
 
+    def register_user(self, user):
+        if self.check_user(user.username) or self.check_mail(user.mail):
+            return False
+        self.cursor.execute("INSERT INTO Users VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", (user.username, user.name, user.surname, user.mail, user.id, user.salt, user.organization, user.trust))
+        self.mariadb_connection.commit()
+        return True

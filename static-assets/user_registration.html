@@ -8,16 +8,16 @@
     <link rel="stylesheet" href="/static/css/bootstrap.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
 </head>
 <body>
-    <form method="POST" action="login" class="jumbotron container">
+    <form method="POST" action="register-user" class="jumbotron container">
         <h1>Tovel - User registration</h1>
         {{outcome}}
-        <div><label>Name: <input type="text" name="name"></label></div>
-        <div><label>Surname: <input type="text" name="surname"></label></div>
-        <div><label>Username: <input type="text" name="username"></label></div>
-        <div><label>Mail: <input type="email" name="mail"></label></div>
-        <div><label>Organization: <input type="text" name="organization"></label></div>
+        <div><label>Name:<br><input type="text" name="name"></label></div>
+        <div><label>Surname:<br><input type="text" name="surname"></label></div>
+        <div><label>Username:<br><input type="text" name="username"></label></div>
+        <div><label>Mail:<br><input type="email" name="mail"></label></div>
+        <div><label>Organization:<br><input type="text" name="organization"></label></div>
         <div><label><input type="checkbox" name="trusted"> Trusted resercher</label></div>
-        <input type="submit" value="Login" class="btn btn-primary">
+        <input type="submit" value="Add user" class="btn btn-primary">
     </form>
 </body>
 </html>

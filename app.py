@@ -2,6 +2,7 @@ from flask import Flask, request, make_response, redirect
 from db import DB
 from ethereum import Ethereum
 from auth_token import Token
+from user import User
 app = Flask(__name__)
 
 
@@ -45,11 +46,25 @@ def logoutPage():
 
 @app.route("/admin/register-user", methods = ['POST', 'GET'])
 def register_user():
-    registration_outcome=""
+    registration_outcome = ""
     if request.method == "POST":
-        # Handle registration
+        print("hello")
+        name = request.form["name"]
+        surname = request.form["surname"]
+        username = request.form["username"]
+        organization = request.form["organization"]
+        mail = request.form["mail"]
+        trusted = True if "trusted" in request.form else False
+        new_user = User(username=username, name=name, surname=surname, organization=organization, mail=mail, trust=trusted)
+        if database.register_user(new_user):
+            registration_outcome = '''<div class="alert alert-success"
+                                    role="alert">User registration was successful</div>'''
+        else:
+            registration_outcome = '''<div class="alert alert-danger"
+                                    role="alert">User with same username already exists</div>'''
+
     with open("static-assets/user_registration.html") as f:
-        return f.read().replace("{{outcome}}", outcome)
+        return f.read().replace("{{outcome}}", registration_outcome)
 
 
 @app.route("/login", methods=["POST"])
@@ -57,6 +72,10 @@ def loginPage():
     username = request.form["username"]
     password = request.form["password"]
     user_id = database.get_id_from_username(username)
+    if user_id is None:
+        ethereum.report_login_failure()  # Report false username
+        resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
+        return resp
     # The user ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB
     auth_id = ethereum.save_auth_attempt(user_id)
     # Store in the blockchain the authentication attempt and get the ID stored in the blockchain
@@ -64,7 +83,7 @@ def loginPage():
     # Get the User object from the database
     user.set_pw_hash(ethereum.get_user(user_id).user_pwd_hash)
     # Update the user object with the hash from the blockchain
-    if user.verify_pw(password):  # If the authentication is successful
+    if database.check_user(username) and user.verify_pw(password):  # If the authentication is successful
         ethereum.save_auth_outcome(auth_id, True)  # Update the auth autcome in the blockchain
         token = Token(user = user_id)  # Generate a new token
         database.register_token(token)  # Register it to the DB
@@ -78,3 +97,4 @@ def loginPage():
 
 
 app.run(host='0.0.0.0', debug=True)  # to do: remove the Bug True in production
+
