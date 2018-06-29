@@ -86,3 +86,5 @@ class DB:
         self.cursor.execute("INSERT INTO Users VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", (user.username, user.name, user.surname, user.mail, user.id, user.salt, user.organization, user.trust))
         self.mariadb_connection.commit()
         return True
+
+    def
