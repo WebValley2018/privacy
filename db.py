@@ -58,5 +58,3 @@ class DB:
     def register_token(self, token):  # register new token in the db
         self.cursor.execute("INSERT INTO Token VALUES (%s, %s, %s, %s);", (token.token_value, token.ttl, token.creation_date, token.user))
         self.mariadb_connection.commit()
-
-
