@@ -22,21 +22,34 @@ class Ethereum:
     -INITIALIZATION -> none
     """
     def __init__(self, providerAddress = 'http://127.0.0.1:7545'):
-        w3 = Web3(Web3.HTTPProvider(providerAddress))
+        self.w3 = Web3(Web3.HTTPProvider(providerAddress))
         with open("smart-contracts/user-details.sol") as f:
             login_contract_source = f.read()  # read login smart contract from sourcefile
         #with open("smart-contracts/auth-logging.sol") as f:
         #    login_contract = f.read()
         compiled_login_contract = compile_source(login_contract_source)
-        login_contract = compiled_login_contract["<stdin>:Login"]
-        self.w3.eth.defaultAccount = self.w3.eth.accounts
-        
+        login_contract_iface = compiled_login_contract["<stdin>:UserDetails"]
+        self.w3.eth.defaultAccount = self.w3.eth.accounts[0]
+        UserDetails = self.w3.eth.contract(abi=login_contract_iface['abi'], bytecode=login_contract_iface['bin'])
+        tx_hash = UserDetails.constructor().transact()
+        # Wait for the transaction to be mined, and get the transaction receipt
+        tx_receipt = self.w3.eth.waitForTransactionReceipt(tx_hash)
+        # Create the contract instance with the newly-deployed address
+        self.user_details = self.w3.eth.contract(
+            address=tx_receipt.contractAddress,
+            abi=login_contract_iface['abi'],
+        )
+
 
     def get_user(self, id):
-        h_pw = 'f5b47c9bfcee500f0f460a902b70f7909a96d03c3c8efe069262ba5312a14e7e52e655e0c32e3e6c2f4f6519e48e9501f9b2edee55cabb191f9c49eec8af07bd'  # as long the blockchain isn't working the hashed pw will be a dummy string
+        h_pw = self.user_details.functions.getPwdHash(id).call()
         user = namedtuple('user_data', 'user_id user_pwd_hash')
         return user(id, h_pw)
     
+    def set_user_hash(self, uid, p_hash):
+        tx_hash = self.user_details.functions.addUser(uid, p_hash).transact()
+        self.w3.eth.waitForTransactionReceipt(tx_hash)
+
     def save_auth_attempt(self, user_id):
         # Save authentication attempt into the blockchain provided the user id, None if the user doesn't exist
         attempt_id = str(uuid4)

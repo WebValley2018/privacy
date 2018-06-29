@@ -2,20 +2,15 @@ pragma solidity ^0.4.0;
 
 contract UserDetails
 {
-    int256 id;
-    
-    constructor() public
+    mapping (string=>string) users;
+
+    function addUser(string user_id, string hash_pwd) public
     {
-        id = 221000;
+        users[user_id] = hash_pwd;
     }
     
-    function setId(int256 _id) public
+    function getPwdHash(string user_id) view public returns (string)
     {
-        id = _id;
-    }
-    
-    function getId() view public returns (int256)
-    {
-        return id;
+        return users[user_id];
     }
 }
