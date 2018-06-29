@@ -8,3 +8,4 @@
 | Ethereum testnet | https://www.rinkeby.io/#stats |
 | Ethereum and Python | http://ecomunsing.com/tutorial-controlling-ethereum-with-python|
 | Ethereum Gas Guide | https://blockgeeks.com/guides/ethereum-gas-step-by-step-guide/|
+| Differential Privassy Notes | https://docs.google.com/document/d/1tFrjj9pZkwENx7H7TmZSEqW0oPPE6bgBUP9VCN1yRVo/edit |
