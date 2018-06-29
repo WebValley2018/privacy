@@ -2,8 +2,9 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 import secrets
 from collections import namedtuple
+from time import localtime, time
 
-namedtuple('TokenTuple', 'token_value, creation_date, dl_time, user')  # tuple for storing the Token
+namedtuple('TokenTuple', 'token_value, creation_date, ttl, user')  # tuple for storing the Token
 
 
 class Token:
@@ -31,19 +32,21 @@ class Token:
      4. token_data -> tuple of 4 elements, if token_data is not None token_value, creation_date, dl_time, user of the class
             will be get value of token_data
    """
-    def __init__(self, token_length=16, time_delta=15, user=None, token_data=None):  # timedelta is in minutes
+    def __init__(self, token_length=16, time_delta=15, user=None, token_data=None):  # timedelta is in seconds
         if token_data is None:  # if token_data is not provided in arguments initialize with custom values
-            self.creation_date = datetime.now()  # time of creation of the token
-            self.dl_time = self.creation_date + timedelta(minutes=time_delta)  # expiration date of the token
+            self.creation_date = int(time())  # time of creation of the token
+            self.dl_time =  self.creation_date + time_delta * 60 # expiration date of the token
             self.token_length = token_length  # length of the token
             self.token_value = secrets.token_hex(token_length)  # value of the token
             self.user = user  # id of the user which created the token
+            self.ttl = time_delta
         else:  # else initialize with values provided by the TokenTuple
             self.token_value = token_data.token_value
             self.creation_date = token_data.creation_date
-            self.dl_time = token_data.dl_time
+            self.dl_time = token_data.creation_date + token_data.ttl
             self.user = token_data.user
             self.token_length = len(self.token_value)
+            self.ttl = token_data.ttl
 
     def __str__(self):
         return self.token_value
@@ -65,4 +68,4 @@ class Token:
 
     def get_token(self):  # get named tuple which stores self.token_value, self.creation_date, self.dl_time, self.user
         tkn = namedtuple('TokenTuple', 'token_value, creation_date, dl_time, user')  # named tuple "TokenTuple"
-        return tkn(self.token_value, self.creation_date, self.dl_time, self.user)
+        return tkn(self.token_value, self.creation_date, self.ttl, self.user)

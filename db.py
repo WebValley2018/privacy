@@ -2,7 +2,7 @@ import mysql.connector as mariadb
 from user import User
 from collections import namedtuple
 from auth_token import Token
-
+from time import localtime, time
 
 class DB:
     """
@@ -15,6 +15,7 @@ class DB:
         2. check_user -> check if user with given id exists
         3. check_token -> check if token with given value exists
         4.  get_id_from_username -> get user id from username
+        5. register_token -> register new token in the db
 
     -INITIALIZATION:
         1. user -> user of db
@@ -41,10 +42,12 @@ class DB:
     def check_token(self, token_value):
         if token_value is None:
             return False
-        self.cursor.execute("SELECT count(1) FROM Token WHERE TokenValue=%s", (token_value,))
+        self.cursor.execute("SELECT count(1), TTL, CreationDate FROM Token WHERE TokenValue=%s", (token_value,))
         for i in self.cursor:
-            # Apart from the fact that the token must exist, it also must not be expired
-            return True if i[0] == 1 else False
+            if i[0] == 1:
+                return True if i[1] + i[2] > int(time()) else False
+            else:
+                return False
 
     def get_id_from_username(self, username):
         self.cursor.execute("SELECT ID FROM Users WHERE Username=%s", (username,))
@@ -52,6 +55,8 @@ class DB:
             return i[0].decode('utf-8')
         return False
     
-    def register_token(self, token):
-        #Jakob, please implement
-        pass
+    def register_token(self, token):  # register new token in the db
+        self.cursor.execute("INSERT INTO Token VALUES (%s, %s, %s, %s);", (token.token_value, token.ttl, token.creation_date, token.user))
+        self.mariadb_connection.commit()
+
+
