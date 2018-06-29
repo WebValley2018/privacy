@@ -4,6 +4,7 @@ from collections import namedtuple
 from auth_token import Token
 from time import localtime, time
 
+
 class DB:
     """
     CLASS DB FOR database integration
@@ -58,3 +59,7 @@ class DB:
     def register_token(self, token):  # register new token in the db
         self.cursor.execute("INSERT INTO Token VALUES (%s, %s, %s, %s);", (token.token_value, token.ttl, token.creation_date, token.user))
         self.mariadb_connection.commit()
+
+    def set_token_ttl(self, token_value):
+        self.cursor.execute("UPDATE Token SET TTL = 0 WHERE TokenValue = %s", (token_value,))
+
