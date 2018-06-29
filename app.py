@@ -13,7 +13,7 @@ ethereum=Ethereum()
 @app.route("/")
 def mainPage():
     if database.check_token(request.cookies.get("tovel_token")):
-        # If the user is logged in, let's display his 
+        # If the user is logged in, let's display his personal page
         return "User page"
     else:
         with open("static-assets/login.html") as f:
@@ -33,19 +33,23 @@ def loginPage():
     username = request.form["username"]
     password = request.form["password"]
     user_id=database.get_id_from_username(username)
+    # The user ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB
     auth_id = ethereum.save_auth_attempt(user_id)
+    # Store in the blockchain the authentication attempt and get the ID stored in the blockchain
     user=database.get_user_from_id(user_id)
+    # Get the User object from the database
     user.set_pw_hash(ethereum.get_user(user_id).user_pwd_hash)
-    if user.verify_pw(password):
-        ethereum.save_auth_outcome(auth_id, True)
-        token=Token(user=user_id)
-        database.register_token(token)
-        resp = make_response(redirect("/"))
-        resp.set_cookie("tovel_token", token.get_token_value())
+    # Update the user object with the hash from the blockchain
+    if user.verify_pw(password):  # If the authentication is successful
+        ethereum.save_auth_outcome(auth_id, True)  # Update the auth autcome in the blockchain
+        token=Token(user=user_id)  # Generate a new token
+        database.register_token(token)  # Register it to the DB
+        resp = make_response(redirect("/"))  # Redirect to the homepage
+        resp.set_cookie("tovel_token", token.get_token_value())  # Set the cookie
         return resp
     else:
-        ethereum.save_auth_outcome(auth_id, False)
-        resp = make_response(redirect("/?loginfailed"))
+        ethereum.save_auth_outcome(auth_id, False)  # Update the auth autcome in the blockchain
+        resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
 
 app.run(host='0.0.0.0', debug=True)
