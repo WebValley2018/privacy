@@ -43,6 +43,15 @@ def logoutPage():
     #return "Redirect to the /"
 
 
+@app.route("/admin/register-user", methods = ['POST', 'GET'])
+def register_user():
+    registration_outcome=""
+    if request.method == "POST":
+        # Handle registration
+    with open("static-assets/user_registration.html") as f:
+        return f.read().replace("{{outcome}}", outcome)
+
+
 @app.route("/login", methods=["POST"])
 def loginPage():
     username = request.form["username"]
