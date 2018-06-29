@@ -5,9 +5,14 @@
 ## Dependencies
 
 * Python 3.6
-* Flask
 * MariaDB
-* MySQL-python 1.2.5
+
+## Python modules
+
+* `Flask`
+* `mysql-connector-python`
+* `web3`
+* `totp`
 
 ## Guidelines
 
