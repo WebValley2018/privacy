@@ -51,3 +51,7 @@ class DB:
         for i in self.cursor:
             return i[0].decode('utf-8')
         return False
+    
+    def register_token(self, token):
+        #Jakob, please implement
+        pass

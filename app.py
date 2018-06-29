@@ -1,6 +1,7 @@
 from flask import Flask, request
 from db import DB
 from ethereum import Ethereum
+from auth_token import Token
 app = Flask(__name__)
 
 
@@ -13,11 +14,16 @@ def mainPage():
         return "User page"
     else:
         with open("static-assets/login.html") as f:
-            return f.read()
+            if "loginfailed" in request.args:
+                return f.read().replace("{{loginmessage}}",'<div class="alert alert-danger" role="alert">Login failed. Please check your credentials</div>')
+            if "logoutsuccess" in request.args:
+                return f.read().replace("{{loginmessage}}",'<div class="alert alert-success" role="alert">Logout succeded</div>')
+            else:
+                return f.read().replace("{{loginmessage}}",'')
 
 @app.route("/logout")
 def logoutPage():
-    return "Reditrect to the /"
+    return "Redirect to the /"
 
 @app.route("/login", methods=["POST"])
 def loginPage():
@@ -26,7 +32,11 @@ def loginPage():
     user_id=database.get_id_from_username(username)
     user=database.get_user_from_id(user_id)
     user.set_pw_hash(ethereum.get_user(user_id).user_pwd_hash)
-    print(user.verify_pw(password))
-    return "Check login and then redirect as needed"
+    if user.verify_pw(password):
+        token=Token(user=user_id)
+        database.register_token(token)
+        
+    else:
+        pass
 
 app.run(host='0.0.0.0', debug=True)

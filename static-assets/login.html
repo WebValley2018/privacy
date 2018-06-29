@@ -10,9 +10,7 @@
 <body>
     <form method="POST" action="login" class="jumbotron container">
         <h1>Tovel - Login</h1>
-        <div class="alert alert-danger" role="alert">
-            Login failed. Please check your credentials
-        </div>
+        {{loginmessage}}
         <div><label>Username: <input type="text" name="username"></label></div>
         <div><label>Password: <input type="password" name="password"></label></div>
         <input type="submit" value="Login" class="btn btn-primary">
