@@ -38,7 +38,7 @@ class DB:
         self.cursor.execute("SELECT count(1) FROM Users WHERE ID=%s", (id,))
         for i in self.cursor:
             return True if i[0] == 1 else False
-    
+
     def check_token(self, token_value):
         if token_value is None:
             return False
@@ -54,7 +54,13 @@ class DB:
         for i in self.cursor:
             return i[0].decode('utf-8')
         return False
-    
+
     def register_token(self, token):  # register new token in the db
+        self.cursor.execute("SELECT count(1) FROM Token WHERE TokenValue=%s", (token.token_value,))
+        for i in self.cursor:
+            if i[0] == 1:
+                return False
+
         self.cursor.execute("INSERT INTO Token VALUES (%s, %s, %s, %s);", (token.token_value, token.ttl, token.creation_date, token.user))
         self.mariadb_connection.commit()
+        return True
