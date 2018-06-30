@@ -38,13 +38,13 @@ def mainPage():
 
 @app.route("/admin")
 def adminPage():
-    if database.check_token(request.cookies.get("tovel_token")):
+    if database.check_admin_token(request.cookies.get("tovel_token")):
         # If the user is logged in, let's display his personal page
         return 'User page <a href="logout">Logout</a>'
     else:
-        with open("static-assets/login.html") as f:
+        with open("static-assets/login-admin.html") as f:
             if "tovel_token" in request.cookies:
-                resp = make_response(redirect("/?sessionexpired"))
+                resp = make_response(redirect("admin?sessionexpired"))
                 resp.set_cookie('tovel_token', '', expires=0)
                 return resp
             elif "sessionexpired" in request.args:  # if redirected to "session expired" print Warning message
