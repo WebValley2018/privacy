@@ -70,6 +70,8 @@ def logoutPage():
 
 @app.route("/admin/register-user", methods = ['POST', 'GET'])
 def register_user():
+    if not database.check_admin_token():
+        #  Redirect to login
     registration_outcome = ""
     if request.method == "POST":
         name = request.form["name"]
