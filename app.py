@@ -72,6 +72,7 @@ def logoutPage():
 def register_user():
     if not database.check_admin_token():
         #  Redirect to login
+        pass
     registration_outcome = ""
     if request.method == "POST":
         name = request.form["name"]
