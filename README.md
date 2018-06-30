@@ -21,11 +21,14 @@ You can access the site at this link: https://webvalley2018.github.io/privacy/
 
 * Python 3.6
 * MariaDB
+* solc
+* ganache-cli (development only)
 
 ## Python modules
 
 * `Flask`
 * `mysql-connector-python`
 * `web3`
-* `totp`
+* `pyotp`
+* `py-solc`
 
