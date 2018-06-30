@@ -128,10 +128,11 @@ class Ethereum:
         # Save on the blockchain the attempt_id and the outcome, that can be either True or False
         event = loads(self._get_event(auth_id))
         event["status"] = outcome
-        self.logging.functions.addEvent(auth_id, dumps(event))
+        tx_hash = self.logging.functions.addEvent(auth_id, dumps(event)).transact()
+        self.w3.eth.waitForTransactionReceipt(tx_hash)
 
     def report_login_failure(self, ip):
-        attempt_id = 'l'+str(uuid4())
+        attempt_id = 'F'+str(uuid4())
         #  Save basic transaction data on the DB
         database.save_audit_transaction(attempt_id)
         tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
