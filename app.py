@@ -40,7 +40,7 @@ def mainPage():
 def adminPage():
     if database.check_admin_token(request.cookies.get("tovel_token")):
         # If the user is logged in, let's display his personal page
-        return 'User page <a href="logout">Logout</a>'
+        return 'User page <a href="admin/logout">Logout</a>'
     else:
         with open("static-assets/login-admin.html") as f:
             if "tovel_token" in request.cookies:
@@ -61,12 +61,17 @@ def adminPage():
 
 @app.route("/logout")
 def logoutPage():
-    print(request.cookies.get("tovel_token"))
     database.set_token_ttl(request.cookies.get("tovel_token"))
     resp = make_response(redirect("/?logoutsuccess"))
     resp.set_cookie('tovel_token', '', expires=0)
     return resp  # Redirect to the /
 
+@app.route("/admin/logout")
+def adminLogoutPage():
+    database.set_admin_token_ttl(request.cookies.get("tovel_token"))
+    resp = make_response(redirect("/admin?logoutsuccess"))
+    resp.set_cookie('tovel_token', '', expires=0)
+    return resp  # Redirect to the /
 
 @app.route("/admin/register-user", methods = ['POST', 'GET'])
 def register_user():
@@ -134,16 +139,12 @@ def adminLoginPage():
         ethereum.report_login_failure()  # Report false username
         resp = make_response(redirect("/admin?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
-    # The user ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB
+    # The admin ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB
     auth_id = ethereum.save_auth_attempt(admin_id)
     # Store in the blockchain the authentication attempt and get the ID stored in the blockchain
     admin = database.get_admin(admin_id)
-    print(admin.username)
-    print(admin.name)
-    print(admin.verify_pw(password))
-    # Get the User object from the database
-    #admin.set_pw_hash(admin.h_pw)
-    # Update the user object with the hash from the blockchain
+    # Get the Admin object from the database
+
     if database.check_admin(username) and admin.verify_pw(password):  # If the authentication is successful
         ethereum.save_auth_outcome(auth_id, True)  # Update the auth autcome in the blockchain
         token = Token(user=admin_id, time_delta=30)  # Generate a new token
