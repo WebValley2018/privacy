@@ -35,6 +35,28 @@ def mainPage():
             else:
                 return f.read().replace("{{loginmessage}}", '')
 
+@app.route("/admin")
+def adminPage():
+    if database.check_token(request.cookies.get("tovel_token")):
+        # If the user is logged in, let's display his personal page
+        return 'User page <a href="logout">Logout</a>'
+    else:
+        with open("static-assets/login.html") as f:
+            if "tovel_token" in request.cookies:
+                resp = make_response(redirect("/?sessionexpired"))
+                resp.set_cookie('tovel_token', '', expires=0)
+                return resp
+            elif "sessionexpired" in request.args:  # if redirected to "session expired" print Warning message
+                return f.read().replace("{{loginmessage}}", '''<div class="alert alert-warning" 
+                                            role="alert">Session expired or not valid</div>''')
+            elif "loginfailed" in request.args:    # if redirected to "loginfailed" print Error message
+                return f.read().replace("{{loginmessage}}", '''<div class="alert alert-danger"
+                                            role="alert">Login failed. Please check your credentials</div>''')
+            elif "logoutsuccess" in request.args:  # if redirected to "logoutsuccess" print Success message
+                return f.read().replace("{{loginmessage}}", '''<div class="alert alert-success"
+                                            role="alert">Logout succeded</div>''')
+            else:
+                return f.read().replace("{{loginmessage}}", '')
 
 @app.route("/logout")
 def logoutPage():
@@ -95,6 +117,4 @@ def loginPage():
         resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
 
-
 app.run(host='0.0.0.0', debug=True)  # to do: remove the Bug True in production
-
