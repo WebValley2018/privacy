@@ -3,6 +3,7 @@ from db import DB
 from ethereum import Ethereum
 from auth_token import Token
 from user import User
+import utilities
 app = Flask(__name__)
 
 
@@ -60,6 +61,7 @@ def adminPage():
 
 @app.route("/logout")
 def logoutPage():
+    print(request.cookies.get("tovel_token"))
     database.set_token_ttl(request.cookies.get("tovel_token"))
     resp = make_response(redirect("/?logoutsuccess"))
     resp.set_cookie('tovel_token', '', expires=0)
@@ -70,17 +72,19 @@ def logoutPage():
 def register_user():
     registration_outcome = ""
     if request.method == "POST":
-        print("hello")
         name = request.form["name"]
         surname = request.form["surname"]
         username = request.form["username"]
         organization = request.form["organization"]
         mail = request.form["mail"]
         trusted = True if "trusted" in request.form else False
-        new_user = User(username=username, name=name, surname=surname, organization=organization, mail=mail, trust=trusted)
+        new_user_password = utilities.generate_password()
+        new_user = User(username=username, name=name, surname=surname, organization=organization, mail=mail, trust=trusted, pw=new_user_password)
         if database.register_user(new_user):
+            ethereum.set_user_hash(new_user.get_id(), new_user.h_pw)
             registration_outcome = '''<div class="alert alert-success"
-                                    role="alert">User registration was successful</div>'''
+                                    role="alert">User registration was successful. User's password is <b><pre>'''+ new_user_password + '''
+                                    </pre></b></div>'''
         else:
             registration_outcome = '''<div class="alert alert-danger"
                                     role="alert">User with same username already exists</div>'''
