@@ -118,3 +118,28 @@ class DB:
             admin = namedtuple('AdminTuple', 'id, username, name, surname, h_pw, salt, otp_key')
             return Admin(admin_data=admin(i[0].decode('utf-8'), i[1].decode('utf-8'), i[2].decode('utf-8'), i[3].decode('utf-8'), i[4].decode('utf-8'), i[5].decode('utf-8'), i[6].decode('utf-8')))
 
+    def get_admin_id_from_username(self, username):  # get user id from username
+        if not self.check_admin(username):
+            return None
+        self.cursor.execute("SELECT ID FROM Administrators WHERE Username=%s", (username,))
+        for i in self.cursor:
+            return i[0].decode('utf-8')
+        return None
+
+    def set_admin_token_ttl(self, token_value):  # et ttl of a token to 0
+        self.cursor.execute("UPDATE AdminToken SET TTL = 0 WHERE TokenValue = %s", (token_value,))
+        self.mariadb_connection.commit()
+
+    def check_admin_token(self, token_value):  # check if token with given value exists
+        if token_value is None:
+            return False
+        self.cursor.execute("SELECT count(1), TTL, CreationDate FROM AdminToken WHERE TokenValue=%s", (token_value,))
+        for i in self.cursor:
+            if i[0] == 1:
+                return True if i[1] + i[2] > int(time()) else False
+            else:
+                return False
+
+    def register_admin_token(self, token):  # register new token in the db
+        self.cursor.execute("INSERT INTO AdminToken VALUES (%s, %s, %s, %s);", (token.token_value, token.ttl, token.creation_date, token.user))
+        self.mariadb_connection.commit()

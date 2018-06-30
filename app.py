@@ -38,13 +38,13 @@ def mainPage():
 
 @app.route("/admin")
 def adminPage():
-    if database.check_token(request.cookies.get("tovel_token")):
+    if database.check_admin_token(request.cookies.get("tovel_token")):
         # If the user is logged in, let's display his personal page
         return 'User page <a href="logout">Logout</a>'
     else:
-        with open("static-assets/login.html") as f:
+        with open("static-assets/login-admin.html") as f:
             if "tovel_token" in request.cookies:
-                resp = make_response(redirect("/?sessionexpired"))
+                resp = make_response(redirect("/admin/?sessionexpired"))
                 resp.set_cookie('tovel_token', '', expires=0)
                 return resp
             elif "sessionexpired" in request.args:  # if redirected to "session expired" print Warning message
@@ -120,5 +120,35 @@ def loginPage():
         ethereum.save_auth_outcome(auth_id, False)  # Update the auth autcome in the blockchain
         resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
+
+
+@app.route("/login-admin", methods=["POST"])
+def adminLoginPage():
+    username = request.form["username"]
+    password = request.form["password"]
+    admin_id = database.get_admin_id_from_username(username)
+    if admin_id is None:
+        ethereum.report_login_failure()  # Report false username
+        resp = make_response(redirect("/admin/?loginfailed"))  # Redirect to the homepage and display an error message
+        return resp
+    # The user ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB
+    auth_id = ethereum.save_auth_attempt(admin_id)
+    # Store in the blockchain the authentication attempt and get the ID stored in the blockchain
+    admin = database.get_user_from_id(admin_id)
+    # Get the User object from the database
+    admin.set_pw_hash(ethereum.get_user(admin_id).user_pwd_hash)
+    # Update the user object with the hash from the blockchain
+    if database.check_admin(username) and admin.verify_pw(password):  # If the authentication is successful
+        ethereum.save_auth_outcome(auth_id, True)  # Update the auth autcome in the blockchain
+        token = Token(user=admin_id, time_delta=30)  # Generate a new token
+        database.register_admin_token(token)  # Register it to the DB
+        resp = make_response(redirect("/admin"))  # Redirect to the homepage
+        resp.set_cookie("tovel_token", token.get_token_value())  # Set the cookie
+        return resp
+    else:
+        ethereum.save_auth_outcome(auth_id, False)  # Update the auth autcome in the blockchain
+        resp = make_response(redirect("/admin/?loginfailed"))  # Redirect to the homepage and display an error message
+        return resp
+
 
 app.run(host='0.0.0.0', debug=True)  # to do: remove the Bug True in production
