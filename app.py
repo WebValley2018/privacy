@@ -38,6 +38,7 @@ def mainPage():
 
 @app.route("/logout")
 def logoutPage():
+    print(request.cookies.get("tovel_token"))
     database.set_token_ttl(request.cookies.get("tovel_token"))
     resp = make_response(redirect("/?logoutsuccess"))
     resp.set_cookie('tovel_token', '', expires=0)
@@ -48,7 +49,6 @@ def logoutPage():
 def register_user():
     registration_outcome = ""
     if request.method == "POST":
-        print("hello")
         name = request.form["name"]
         surname = request.form["surname"]
         username = request.form["username"]
