@@ -69,7 +69,6 @@ class DB:
             return None
         self.cursor.execute("SELECT ID FROM Users WHERE Username=%s", (username,))
         for i in self.cursor:
-            print(i)
             return i[0].decode('utf-8')
         return None
     
@@ -79,6 +78,7 @@ class DB:
 
     def set_token_ttl(self, token_value):
         self.cursor.execute("UPDATE Token SET TTL = 0 WHERE TokenValue = %s", (token_value,))
+        self.mariadb_connection.commit()
 
     def register_user(self, user):
         if self.check_user(user.username) or self.check_mail(user.mail):
@@ -86,3 +86,9 @@ class DB:
         self.cursor.execute("INSERT INTO Users VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", (user.username, user.name, user.surname, user.mail, user.id, user.salt, user.organization, user.trust))
         self.mariadb_connection.commit()
         return True
+
+    def get_token_ttl(self, tokenvalue):
+        self.cursor.execute("SELECT TTL FROM Token WHERE TokenValue=%s", (tokenvalue,))
+        for i in self.cursor:
+            return i[0]
+        return None
