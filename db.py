@@ -5,6 +5,7 @@ from auth_token import Token
 from time import localtime, time
 from admin import Admin
 
+
 class DB:
     """
     CLASS DB FOR database integration
@@ -104,3 +105,8 @@ class DB:
         self.cursor.execute("INSERT INTO Administrators VALUES (%s, %s, %s, %s, %s, %s, %s);", (admin.id, admin.username, admin.name, admin.surname, admin.h_pw, admin.salt, admin.otp_key,))
         self.mariadb_connection.commit()
         return True
+
+    def get_otp_key(self, id):
+        self.cursor.execute("SELECT count(1), OTPKey FROM Administrators WHERE ID=%s", (id,))
+        for i in self.cursor:
+            return None if i[0] == 0 else i[1].decode('utf-8')
