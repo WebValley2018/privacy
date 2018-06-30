@@ -24,6 +24,8 @@ class Ethereum:
     def __init__(self, providerAddress = 'http://127.0.0.1:7545'):
         #  Inizialize Web3 object
         self.w3 = Web3(Web3.HTTPProvider(providerAddress))
+        #  Tell the blockchain which account to use
+        self.w3.eth.defaultAccount = self.w3.eth.accounts[0]
         #  Now dealing with User details smart contract
         if not isfile("smart-contracts/user-details.json"):
             with open("smart-contracts/user-details.sol") as f:
@@ -35,8 +37,6 @@ class Ethereum:
             login_contract_iface = compiled_login_contract["<stdin>:UserDetails"]
             #  Start the registration contract onto the blockchain
             UserDetails = self.w3.eth.contract(abi=login_contract_iface['abi'], bytecode=login_contract_iface['bin'])
-            #  Tell the blockchain which account to use
-            self.w3.eth.defaultAccount = self.w3.eth.accounts[0]
             #  Initialize transaction
             tx_hash = UserDetails.constructor().transact()
             #  Get transaction details
