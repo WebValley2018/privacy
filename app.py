@@ -44,7 +44,7 @@ def adminPage():
     else:
         with open("static-assets/login-admin.html") as f:
             if "tovel_token" in request.cookies:
-                resp = make_response(redirect("/admin/?sessionexpired"))
+                resp = make_response(redirect("/admin?sessionexpired"))
                 resp.set_cookie('tovel_token', '', expires=0)
                 return resp
             elif "sessionexpired" in request.args:  # if redirected to "session expired" print Warning message
@@ -125,21 +125,24 @@ def loginPage():
         return resp
 
 
-@app.route("/login-admin", methods=["POST"])
+@app.route("/admin/login", methods=["POST"])
 def adminLoginPage():
     username = request.form["username"]
     password = request.form["password"]
     admin_id = database.get_admin_id_from_username(username)
     if admin_id is None:
         ethereum.report_login_failure()  # Report false username
-        resp = make_response(redirect("/admin/?loginfailed"))  # Redirect to the homepage and display an error message
+        resp = make_response(redirect("/admin?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
     # The user ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB
     auth_id = ethereum.save_auth_attempt(admin_id)
     # Store in the blockchain the authentication attempt and get the ID stored in the blockchain
-    admin = database.get_user_from_id(admin_id)
+    admin = database.get_admin(admin_id)
+    print(admin.username)
+    print(admin.name)
+    print(admin.verify_pw(password))
     # Get the User object from the database
-    admin.set_pw_hash(ethereum.get_user(admin_id).user_pwd_hash)
+    #admin.set_pw_hash(admin.h_pw)
     # Update the user object with the hash from the blockchain
     if database.check_admin(username) and admin.verify_pw(password):  # If the authentication is successful
         ethereum.save_auth_outcome(auth_id, True)  # Update the auth autcome in the blockchain
@@ -150,7 +153,7 @@ def adminLoginPage():
         return resp
     else:
         ethereum.save_auth_outcome(auth_id, False)  # Update the auth autcome in the blockchain
-        resp = make_response(redirect("/admin/?loginfailed"))  # Redirect to the homepage and display an error message
+        resp = make_response(redirect("/admin?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
 
 
