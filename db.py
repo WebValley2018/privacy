@@ -110,3 +110,10 @@ class DB:
         self.cursor.execute("SELECT count(1), OTPKey FROM Administrators WHERE ID=%s", (id,))
         for i in self.cursor:
             return None if i[0] == 0 else i[1].decode('utf-8')
+
+    def get_admin(self, id):
+        self.cursor.execute("SELECT ID, Username, Name, Surname, Password, Salt, OTPKey FROM Administrators WHERE ID=%s", (id,))
+        for i in self.cursor:
+            admin = namedtuple('AdminTuple', 'id, username, name, surname, h_pw, salt, otp_key')
+            return Admin(admin_data=admin(i[0].decode('utf-8'), i[1].decode('utf-8'), i[2].decode('utf-8'), i[3].decode('utf-8'), i[4].decode('utf-8'), i[5].decode('utf-8'), i[6].decode('utf-8')))
+
