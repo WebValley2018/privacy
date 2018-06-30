@@ -99,7 +99,7 @@ def loginPage():
     password = request.form["password"]
     user_id = database.get_id_from_username(username)
     if user_id is None:
-        ethereum.report_login_failure()  # Report false username
+        ethereum.report_login_failure(request.remote_addr)  # Report false username
         resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
     # The user ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB

@@ -6,6 +6,12 @@ from time import localtime, time
 from admin import Admin
 
 
+class Transaction:
+    def __init__(self, dbdata):
+        self.id = dbdata[0].decode("utf-8")
+        self.timestamp=int(dbdata[1])
+
+
 class DB:
     """
     CLASS DB FOR database integration
@@ -117,4 +123,11 @@ class DB:
         for i in self.cursor:
             admin = namedtuple('AdminTuple', 'id, username, name, surname, h_pw, salt, otp_key')
             return Admin(admin_data=admin(i[0].decode('utf-8'), i[1].decode('utf-8'), i[2].decode('utf-8'), i[3].decode('utf-8'), i[4].decode('utf-8'), i[5].decode('utf-8'), i[6].decode('utf-8')))
-
+    
+    def save_audit_transaction(self, id):
+        self.cursor.execute("INSERT INTO Audit VALUES (%s, %s)", (id,str(int(time()))))
+        self.mariadb_connection.commit()
+    
+    def get_audit_data(self):
+        self.cursor.execute("SELECT * FROM Audit")
+        return [Transaction(l) for l in self.cursor.fetchall()]

@@ -1,16 +1,16 @@
 from collections import namedtuple
-from uuid import uuid4
 from json import dumps, loads
 from os.path import isfile
-import web3
-import json
+from time import time
+from uuid import uuid4
 
+from db import DB
 from solc import compile_source
-from web3 import Web3 
+import web3
 from web3.contract import ConciseContract
 
 namedtuple('userData', 'id, h_pw')  # user data (id and hashe pw
-
+database = DB()
 
 class Ethereum:
     """
@@ -23,7 +23,7 @@ class Ethereum:
     """
     def __init__(self, providerAddress = 'http://127.0.0.1:7545'):
         #  Inizialize Web3 object
-        self.w3 = Web3(Web3.HTTPProvider(providerAddress))
+        self.w3 = web3.Web3(web3.Web3.HTTPProvider(providerAddress))
         #  Tell the blockchain which account to use
         self.w3.eth.defaultAccount = self.w3.eth.accounts[0]
         #  Now dealing with User details smart contract
@@ -53,10 +53,42 @@ class Ethereum:
                 dati_sc_ud = loads(f.read())
             sc_ud_address = dati_sc_ud["address"]
             sc_ud_abi = dati_sc_ud["abi"]
+
+        #  Loading logging smart contract
+        if not isfile("smart-contracts/logging.json"):
+            with open("smart-contracts/logging.sol") as f:
+                #  Read Solidity source code
+                logging_contract_source = f.read()  # read login smart contract from sourcefile
+            #  Compile Solidity
+            compiled_logging_contract = compile_source(logging_contract_source)
+            #  Get interface for the contract
+            logging_contract_iface = compiled_logging_contract["<stdin>:Logging"]
+            #  Start the registration contract onto the blockchain
+            Logging = self.w3.eth.contract(abi=logging_contract_iface['abi'], bytecode=logging_contract_iface['bin'])
+            #  Initialize transaction
+            tx_hash = Logging.constructor().transact()
+            #  Get transaction details
+            tx_receipt = self.w3.eth.waitForTransactionReceipt(tx_hash)
+            #  Save ABI and contract address to file
+            sc_log_abi=logging_contract_iface["abi"]
+            sc_log_address=tx_receipt.contractAddress
+            f = open("smart-contracts/logging.json", 'w')
+            f.write(dumps({"address": sc_log_address, "abi": sc_log_abi}))
+            f.close()
+        else:
+            #  Load smart contract data from file
+            with open("smart-contracts/logging.json") as f:
+                dati_sc_log = loads(f.read())
+            sc_log_address = dati_sc_log["address"]
+            sc_log_abi = dati_sc_log["abi"]
         #  Prepare the smart contract
         self.user_details = self.w3.eth.contract(
             address=sc_ud_address,
             abi=sc_ud_abi,
+        )
+        self.logging = self.w3.eth.contract(
+            address=sc_log_address,
+            abi=sc_log_abi,
         )
 
 
@@ -71,25 +103,39 @@ class Ethereum:
 
     def save_auth_attempt(self, user_id):
         # Save authentication attempt into the blockchain provided the user id, None if the user doesn't exist
-        attempt_id = 'l'+str(uuid4)
+        attempt_id = 'l'+str(uuid4())
         # attempt_id is the id of the event
-        #
+        # The blockchain doesn'th have the capabilities to get the list of transaction
+        # moreover, if you have a mismatch between the blockchain and the db it could
+        # mean that the DB has been compromised. Therefore, let's save basic transaction data there too
+        database.save_audit_transaction(attempt_id)
         # Save on the blockchain the attempt_id and the user_id
-        #
+        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+            "timestamp": int(time()),
+            "user_id": user_id,
+            "status": "in_progress"
+        })).transact()
+        self.w3.eth.waitForTransactionReceipt(tx_hash)
         return attempt_id
 
+    def _get_event(self, ev_id):
+        return self.logging.functions.getEvent(ev_id).call()
+    
     def save_auth_outcome(self, auth_id, outcome):
         # Save authentication outcome into the blockchain provided the authentication id
         # attempt_id is the id of the event, same as above
         #
         # Save on the blockchain the attempt_id and the outcome, that can be either True or False
-        #
-        pass
+        event = loads(self._get_event(auth_id))
+        event["status"] = outcome
+        self.logging.functions.addEvent(auth_id, dumps(event))
 
-    def report_login_failure(self):
-        # Save authentication outcome into the blockchain provided the authentication id
-        # attempt_id is the id of the event, same as above
-        #
-        # Save on the blockchain the attempt_id and the outcome, that can be either True or False
-        #
-        pass
+    def report_login_failure(self, ip):
+        attempt_id = 'l'+str(uuid4())
+        #  Save basic transaction data on the DB
+        database.save_audit_transaction(attempt_id)
+        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+            "timestamp": int(time()),
+            "IP": ip
+        })).transact()
+        self.w3.eth.waitForTransactionReceipt(tx_hash)

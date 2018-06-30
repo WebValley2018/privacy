@@ -2,16 +2,15 @@ pragma solidity ^0.4.0;
 
 contract Logging
 {
-    mapping (string=>uint64) timestamps;
     mapping (string=>string) events;
 
-    function addEvent(string event_id, string ) public
+    function addEvent(string event_id, string json) public
     {
-        users[user_id] = hash_pwd;
+        events[event_id] = json;
     }
     
-    function getPwdHash(string user_id) view public returns (string)
+    function getEvent(string event_id) view public returns (string)
     {
-        return users[user_id];
+        return events[event_id];
     }
 }
