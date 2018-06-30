@@ -71,7 +71,7 @@ class Ethereum:
 
     def save_auth_attempt(self, user_id):
         # Save authentication attempt into the blockchain provided the user id, None if the user doesn't exist
-        attempt_id = str(uuid4)
+        attempt_id = 'l'+str(uuid4)
         # attempt_id is the id of the event
         #
         # Save on the blockchain the attempt_id and the user_id
