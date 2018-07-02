@@ -120,7 +120,7 @@ def loginPage():
     user.set_pw_hash(ethereum.get_user(user_id).user_pwd_hash)
     # Update the user object with the hash from the blockchain
     if database.check_user(username) and user.verify_pw(password):  # If the authentication is successful
-        ethereum.save_auth_outcome(user_id, True)  # Update the auth autcome in the blockchain
+        ethereum.save_auth(user_id, True)  # Update the auth autcome in the blockchain
         token = Token(user = user_id)  # Generate a new token
         database.register_token(token)  # Register it to the DB
         resp = make_response(redirect("/"))  # Redirect to the homepage
@@ -154,7 +154,7 @@ def adminLoginPage():
         resp.set_cookie("tovel_token_admin", token.get_token_value())  # Set the cookie
         return resp
     else:
-        ethereum.save_auth_outcome(admin_id, False, True)  # Update the auth autcome in the blockchain
+        ethereum.save_auth(admin_id, False, True)  # Update the auth autcome in the blockchain
         resp = make_response(redirect("/admin?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
 

@@ -160,10 +160,9 @@ class Ethereum:
         print(self.logging.functions.getEventsLength().call())
     
     def log_data_access(self, user, dataset):
-        time = time()
         transaction_id = "x" + str(uuid4())
         database.save_audit_transaction(transaction_id)
-        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+        tx_hash = self.logging.functions.addEvent(transaction_id, dumps({
             "timestamp": int(time()),
             "user": user,
             "dataset": dataset
@@ -171,10 +170,9 @@ class Ethereum:
         self.w3.eth.waitForTransactionReceipt(tx_hash)
     
     def log_query(self, user, dataset, query):
-        time = time()
         transaction_id = "q" + str(uuid4())
         database.save_audit_transaction(transaction_id)
-        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+        tx_hash = self.logging.functions.addEvent(transaction_id, dumps({
             "timestamp": int(time()),
             "user": user,
             "dataset": dataset,
@@ -183,20 +181,18 @@ class Ethereum:
         self.w3.eth.waitForTransactionReceipt(tx_hash)
 
     def log_change_pwd(self, user):
-        time = time()
         transaction_id = "p" + str(uuid4())
         database.save_audit_transaction(transaction_id)
-        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+        tx_hash = self.logging.functions.addEvent(transaction_id, dumps({
             "timestamp": int(time()),
             "user": user
         })).transact()
         self.w3.eth.waitForTransactionReceipt(tx_hash)
     
     def log_record_edit(self, record, dataset, user):
-        time = time()
         transaction_id = "m" + str(uuid4())
         database.save_audit_transaction(transaction_id)
-        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+        tx_hash = self.logging.functions.addEvent(transaction_id, dumps({
             "timestamp": int(time()),
             "user": user,
             "record": record,
@@ -205,10 +201,9 @@ class Ethereum:
         self.w3.eth.waitForTransactionReceipt(tx_hash)
     
     def log_record_add(self, record, dataset, user):
-        time = time()
         transaction_id = "D" + str(uuid4())
         database.save_audit_transaction(transaction_id)
-        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+        tx_hash = self.logging.functions.addEvent(transaction_id, dumps({
             "timestamp": int(time()),
             "user": user,
             "record": record,
@@ -217,10 +212,9 @@ class Ethereum:
         self.w3.eth.waitForTransactionReceipt(tx_hash)
     
     def log_record_delete(self, record, dataset, user):
-        time = time()
         transaction_id = "t" + str(uuid4())
         database.save_audit_transaction(transaction_id)
-        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+        tx_hash = self.logging.functions.addEvent(transaction_id, dumps({
             "timestamp": int(time()),
             "user": user,
             "record": record,
@@ -229,10 +223,9 @@ class Ethereum:
         self.w3.eth.waitForTransactionReceipt(tx_hash)
     
     def log_user_registration(self, admin, user):
-        time = time()
         transaction_id = "t" + str(uuid4())
         database.save_audit_transaction(transaction_id)
-        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+        tx_hash = self.logging.functions.addEvent(transaction_id, dumps({
             "timestamp": int(time()),
             "user": user,
             "admin": admin
@@ -249,10 +242,9 @@ class Ethereum:
 
     def healthcheck(self):
         if not self.healthy_log():
-            time = time()
             transaction_id = "h" + str(uuid4())
             database.save_audit_transaction(transaction_id)
-            tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+            tx_hash = self.logging.functions.addEvent(transaction_id, dumps({
                 "timestamp": int(time())
             })).transact()
             self.w3.eth.waitForTransactionReceipt(tx_hash)
