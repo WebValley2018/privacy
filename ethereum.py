@@ -143,4 +143,72 @@ class Ethereum:
         self.w3.eth.waitForTransactionReceipt(tx_hash)
     
     def get_audit_ids(self):
-        print(self.logging.functions.getEvents().call())
+        print(self.logging.functions.getEventsLength().call())
+    
+    def log_data_access(self, user, dataset):
+        time = time()
+        transaction_id = "x" + str(uuid4())
+        database.save_audit_transaction(transaction_id)
+        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+            "timestamp": int(time()),
+            "user": user,
+            "dataset": dataset
+        })).transact()
+        self.w3.eth.waitForTransactionReceipt(tx_hash)
+    
+    def log_query(self, user, dataset):
+        time = time()
+        transaction_id = "q" + str(uuid4())
+        database.save_audit_transaction(transaction_id)
+        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+            "timestamp": int(time()),
+            "user": user,
+            "dataset": dataset
+        })).transact()
+        self.w3.eth.waitForTransactionReceipt(tx_hash)
+
+    def log_change_pwd(self, user):
+        time = time()
+        transaction_id = "p" + str(uuid4())
+        database.save_audit_transaction(transaction_id)
+        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+            "timestamp": int(time()),
+            "user": user
+        })).transact()
+        self.w3.eth.waitForTransactionReceipt(tx_hash)
+    
+    def log_record_edit(self, record, dataset, user):
+        time = time()
+        transaction_id = "m" + str(uuid4())
+        database.save_audit_transaction(transaction_id)
+        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+            "timestamp": int(time()),
+            "user": user,
+            "record": record
+            "dataset": dataset
+        })).transact()
+        self.w3.eth.waitForTransactionReceipt(tx_hash)
+    
+    def log_record_add(self, record, dataset, user):
+        time = time()
+        transaction_id = "D" + str(uuid4())
+        database.save_audit_transaction(transaction_id)
+        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+            "timestamp": int(time()),
+            "user": user,
+            "record": record
+            "dataset": dataset
+        })).transact()
+        self.w3.eth.waitForTransactionReceipt(tx_hash)
+    
+    def log_record_delete(self, record, dataset, user):
+        time = time()
+        transaction_id = "t" + str(uuid4())
+        database.save_audit_transaction(transaction_id)
+        tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+            "timestamp": int(time()),
+            "user": user,
+            "record": record
+            "dataset": dataset
+        })).transact()
+        self.w3.eth.waitForTransactionReceipt(tx_hash)
