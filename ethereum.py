@@ -4,11 +4,13 @@ from os.path import isfile
 from time import time
 from uuid import uuid4
 
+from db import DB
 from solc import compile_source
 import web3
 from web3.contract import ConciseContract
 
 namedtuple('userData', 'id, h_pw')  # user data (id and hashe pw
+database = DB()
 
 
 class Ethereum:
@@ -107,6 +109,7 @@ class Ethereum:
         # The blockchain doesn'th have the capabilities to get the list of transaction
         # moreover, if you have a mismatch between the blockchain and the db it could
         # mean that the DB has been compromised. Therefore, let's save basic transaction data there too
+        database.save_audit_transaction(attempt_id)
         # Save on the blockchain the attempt_id and the user_id
         tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
             "timestamp": int(time()),
@@ -132,8 +135,12 @@ class Ethereum:
     def report_login_failure(self, ip):
         attempt_id = 'F'+str(uuid4())
         #  Save basic transaction data on the DB
+        database.save_audit_transaction(attempt_id)
         tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
             "timestamp": int(time()),
             "IP": ip
         })).transact()
         self.w3.eth.waitForTransactionReceipt(tx_hash)
+    
+    def get_audit_ids(self):
+        print(self.logging.functions.getEvents().call())
