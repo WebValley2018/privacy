@@ -13,6 +13,28 @@ namedtuple('userData', 'id, h_pw')  # user data (id and hashe pw
 database = DB()
 
 
+class Transaction:
+    def __init__(self, dbdata, eth):
+        self.id = dbdata[0].decode("utf-8")
+        self.timestamp=int(dbdata[1])
+        eth_data = eth.get_event(self.id)
+        self.data = loads("{}" if eth_data == '' else eth_data )
+    
+    def event_description(self):
+        kinds = {
+            "F": "Unrecognized user with IP address #ip tried to login"
+            "l": "User tried to login"
+            "x": "User accessed the dataset '#dataset'"
+            "q": "User queried the dataset '#dataset'"
+            "p": "User changed his password"
+            "m": "record edited" ## TODO: Fix everything there
+            "D": "record added"
+            "t": "record deleted"
+            "h": "health"
+            "i": "import"
+        }
+
+
 class Ethereum:
     """
     Ethereum class to deal with smart contracts
@@ -119,7 +141,7 @@ class Ethereum:
         self.w3.eth.waitForTransactionReceipt(tx_hash)
         return attempt_id
 
-    def _get_event(self, ev_id):
+    def get_event(self, ev_id):
         return self.logging.functions.getEvent(ev_id).call()
     
     def save_auth_outcome(self, auth_id, outcome):
@@ -127,12 +149,13 @@ class Ethereum:
         # attempt_id is the id of the event, same as above
         #
         # Save on the blockchain the attempt_id and the outcome, that can be either True or False
-        event = loads(self._get_event(auth_id))
+        event = loads(self.get_event(auth_id))
         event["status"] = outcome
         tx_hash = self.logging.functions.addEvent(auth_id, dumps(event)).transact()
         self.w3.eth.waitForTransactionReceipt(tx_hash)
 
     def report_login_failure(self, ip):
+        #  TODO: Fix IP
         attempt_id = 'F'+str(uuid4())
         #  Save basic transaction data on the DB
         database.save_audit_transaction(attempt_id)
@@ -142,7 +165,7 @@ class Ethereum:
         })).transact()
         self.w3.eth.waitForTransactionReceipt(tx_hash)
     
-    def get_audit_ids(self):
+    def get_audit_len(self):
         print(self.logging.functions.getEventsLength().call())
     
     def log_data_access(self, user, dataset):
@@ -156,14 +179,15 @@ class Ethereum:
         })).transact()
         self.w3.eth.waitForTransactionReceipt(tx_hash)
     
-    def log_query(self, user, dataset):
+    def log_query(self, user, dataset, query):
         time = time()
         transaction_id = "q" + str(uuid4())
         database.save_audit_transaction(transaction_id)
         tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
             "timestamp": int(time()),
             "user": user,
-            "dataset": dataset
+            "dataset": dataset,
+            "query_hash": None #  TODO: put the hash and save query in DB
         })).transact()
         self.w3.eth.waitForTransactionReceipt(tx_hash)
 
@@ -184,7 +208,7 @@ class Ethereum:
         tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
             "timestamp": int(time()),
             "user": user,
-            "record": record
+            "record": record,
             "dataset": dataset
         })).transact()
         self.w3.eth.waitForTransactionReceipt(tx_hash)
@@ -196,7 +220,7 @@ class Ethereum:
         tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
             "timestamp": int(time()),
             "user": user,
-            "record": record
+            "record": record,
             "dataset": dataset
         })).transact()
         self.w3.eth.waitForTransactionReceipt(tx_hash)
@@ -208,7 +232,25 @@ class Ethereum:
         tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
             "timestamp": int(time()),
             "user": user,
-            "record": record
+            "record": record,
             "dataset": dataset
         })).transact()
         self.w3.eth.waitForTransactionReceipt(tx_hash)
+    
+    def get_audit_data(self):
+        database.cursor.execute("SELECT * FROM Audit")
+        return [Transaction(l, self) for l in database.cursor.fetchall()]
+    
+    def healthy_log(self):
+        database.cursor.execute("SELECT * FROM Audit")
+        return len(database.cursor.fetchall()) == self.get_audit_len()
+
+    def healthcheck(self):
+        if not self.healthy_log():
+            time = time()
+            transaction_id = "h" + str(uuid4())
+            database.save_audit_transaction(transaction_id)
+            tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
+                "timestamp": int(time())
+            })).transact()
+            self.w3.eth.waitForTransactionReceipt(tx_hash)
