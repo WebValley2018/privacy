@@ -17,7 +17,15 @@ ethereum=Ethereum()
 def mainPage():
     if database.check_token(request.cookies.get("tovel_token")):
         # If the user is logged in, let's display his personal page
-        return 'User page <a href="logout">Logout</a>'
+        user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token"), False))
+        replace_list = {
+            "#Name" :  user.name + " " + user.surname
+        }
+        with open("static-assets/user.html") as f:
+            html = f.read()
+            for search, replace in replace_list.items():
+                html = html.replace(search, replace)
+        return html
     else:
         with open("static-assets/login.html") as f:
             if "tovel_token" in request.cookies:
@@ -67,6 +75,18 @@ def adminPage():
             else:
                 return f.read().replace("{{loginmessage}}", '')
 
+@app.route("/change-password")
+def changePassword():
+    user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token"), False))
+    replace_list = {
+        "#Name": user.name + " " + user.surname
+    }
+    with open("static-assets/change_password.html") as f:
+        html = f.read()
+        for search, replace in replace_list.items():
+            html = html.replace(search, replace)
+    return html
+
 @app.route("/logout")
 def logoutPage():
     database.set_token_ttl(request.cookies.get("tovel_token"))
@@ -115,7 +135,7 @@ def register_user():
         html = f.read()
         for search, replace in replace_list.items():
             html = html.replace(search, replace)
-    return html
+    return html.replace("{{outcome}}", registration_outcome)
 
 
 
@@ -136,7 +156,7 @@ def loginPage():
     # Update the user object with the hash from the blockchain
     if database.check_user(username) and user.verify_pw(password):  # If the authentication is successful
         ethereum.save_auth(user_id, True)  # Update the auth autcome in the blockchain
-        token = Token(user = user_id)  # Generate a new token
+        token = Token(user = user_id, time_delta=60*5)  # Generate a new token
         database.register_token(token)  # Register it to the DB
         resp = make_response(redirect("/"))  # Redirect to the homepage
         resp.set_cookie("tovel_token", token.get_token_value())  # Set the cookie
