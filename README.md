@@ -22,5 +22,8 @@ You can access the site at this link: https://webvalley2018.github.io/privacy/
 * Python 3.6
 * Flask
 * MariaDB
+* `pyexcel`
+* `pyexcel-xls`
+* `pyexcel-xlsx`
 * MySQL-python 1.2.5
 
