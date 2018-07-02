@@ -106,6 +106,3 @@ class DB:
             query = f"""INSERT INTO `{dataset_name}` VALUES({', '.join(["%s" for _ in columns])});"""
             self.cursor.execute(query, tuple(self.cast_python_type_for_sql(columns_data_type[columns[i]], c) for i,c in enumerate(d)))
         self.mariadb_connection.commit()
-
-d = DB()
-d.import_excel("TestData.xlsx", "Test dataset")
