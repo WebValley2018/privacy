@@ -1,8 +1,10 @@
+from collections import namedtuple
+from time import localtime, time
+
+from auth_token import Token
+from excel import Excel
 import mysql.connector as mariadb
 from user import User
-from collections import namedtuple
-from auth_token import Token
-from time import localtime, time
 
 class DB:
     """
@@ -64,3 +66,43 @@ class DB:
         self.cursor.execute("INSERT INTO Token VALUES (%s, %s, %s, %s);", (token.token_value, token.ttl, token.creation_date, token.user))
         self.mariadb_connection.commit()
         return True
+    
+    def python_type_to_sql(self, t):
+        """This method converts Python type names to the matching SQL ones"""
+        types={
+            "bool": "INTEGER",
+            "int": "INTEGER",
+            "float": "DOUBLE",
+            "str": "TEXT",
+            "datetime.date": "INT"
+        }
+        return types[t]
+    
+    def cast_python_type_for_sql(self, typestring, variable):
+        functions = {
+            "bool": int,
+            "int": int,
+            "float": float,
+            "str": str,
+            "datetime.date": lambda x: x.timestamp()
+        }
+        return str(functions[typestring](variable))
+    
+    def _get_parameters_generate_table(self, a, d):
+        for e in a:
+            yield from (e, self.python_type_to_sql(d[e]))
+    def import_excel(self, fn, dataset_name):
+        file = Excel(fn)
+        #  Add table based on Excel file columns
+        columns = file.get_columns()
+        columns_data_type={c: file.get_data_type(i) for i, c in enumerate(columns)}
+
+        #  TODO: Sanitize the query
+        query = f'''CREATE TABLE `{dataset_name}` ({', '.join(f'`{c}` {self.python_type_to_sql(columns_data_type[c])}' for c in columns)});'''
+        self.cursor.execute(query)
+        self.mariadb_connection.commit()
+        data = file.get_data()
+        print(data)
+
+d = DB()
+d.import_excel("TestData.xlsx", "Test dataset")
