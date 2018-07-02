@@ -147,14 +147,14 @@ def adminLoginPage():
     # Get the Admin object from the database
 
     if database.check_admin(username) and admin.verify_pw(password) and admin.verify_otp(request.form["totp"]):  # If the authentication is successful
-        ethereum.save_auth(user_id, True, True)  # Update the auth autcome in the blockchain
+        ethereum.save_auth(admin_id, True, True)  # Update the auth autcome in the blockchain
         token = Token(user=admin_id, time_delta=120)  # Generate a new token
         database.register_admin_token(token)  # Register it to the DB
         resp = make_response(redirect("/admin"))  # Redirect to the homepage
         resp.set_cookie("tovel_token_admin", token.get_token_value())  # Set the cookie
         return resp
     else:
-        ethereum.save_auth_outcome(user_id, False, True)  # Update the auth autcome in the blockchain
+        ethereum.save_auth_outcome(admin_id, False, True)  # Update the auth autcome in the blockchain
         resp = make_response(redirect("/admin?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
 
