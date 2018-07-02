@@ -148,7 +148,7 @@ def adminLoginPage():
     admin = database.get_admin(admin_id)
     # Get the Admin object from the database
 
-    if database.check_admin(username) and admin.verify_pw(password):  # If the authentication is successful
+    if database.check_admin(username) and admin.verify_pw(password) and admin.verify_otp(request.form["totp"]):  # If the authentication is successful
         ethereum.save_auth_outcome(auth_id, True)  # Update the auth autcome in the blockchain
         token = Token(user=admin_id, time_delta=120)  # Generate a new token
         database.register_admin_token(token)  # Register it to the DB
