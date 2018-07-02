@@ -111,7 +111,7 @@ class DB:
         self.cursor.execute("SELECT count(1), OTPKey FROM Administrators WHERE ID=%s", (id,))
         for i in self.cursor:
             return None if i[0] == 0 else i[1].decode('utf-8')
-
+    
     def get_admin(self, id):
         self.cursor.execute("SELECT ID, Username, Name, Surname, Password, Salt, OTPKey FROM Administrators WHERE ID=%s", (id,))
         for i in self.cursor:
@@ -142,4 +142,11 @@ class DB:
 
     def register_admin_token(self, token):  # register new token in the db
         self.cursor.execute("INSERT INTO AdminToken VALUES (%s, %s, %s, %s);", (token.token_value, token.ttl, token.creation_date, token.user))
+    
+    def save_audit_transaction(self, id):
+        self.cursor.execute("INSERT INTO Audit VALUES (%s, %s)", (id,str(int(time()))))
         self.mariadb_connection.commit()
+    
+    def get_userid_from_token(self, token, admin=False):
+        self.cursor.execute("SELECT User FROM "+("Admin" if admin else '')+"Token WHERE TokenValue = %s", (token, ))
+        return self.cursor.fetchall()[0][0].decode("utf-8")

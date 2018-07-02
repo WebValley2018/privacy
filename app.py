@@ -38,14 +38,15 @@ def mainPage():
 
 @app.route("/admin")
 def adminPage():
-    if database.check_admin_token(request.cookies.get("tovel_token")):
+    if database.check_admin_token(request.cookies.get("tovel_token_admin")):
         # If the user is logged in, let's display his personal page
-        return 'User page <a href="admin/logout">Logout</a>'
+        with open("static-assets/admin.html") as f:
+            return f.read()
     else:
         with open("static-assets/login-admin.html") as f:
             if "tovel_token" in request.cookies:
                 resp = make_response(redirect("/admin?sessionexpired"))
-                resp.set_cookie('tovel_token', '', expires=0)
+                resp.set_cookie('tovel_token_admin', '', expires=0)
                 return resp
             elif "sessionexpired" in request.args:  # if redirected to "session expired" print Warning message
                 return f.read().replace("{{loginmessage}}", '''<div class="alert alert-warning" 
@@ -68,16 +69,17 @@ def logoutPage():
 
 @app.route("/admin/logout")
 def adminLogoutPage():
-    database.set_admin_token_ttl(request.cookies.get("tovel_token"))
+    database.set_admin_token_ttl(request.cookies.get("tovel_token_admin"))
     resp = make_response(redirect("/admin?logoutsuccess"))
-    resp.set_cookie('tovel_token', '', expires=0)
+    resp.set_cookie('tovel_token_admin', '', expires=0)
     return resp  # Redirect to the /
 
 @app.route("/admin/register-user", methods = ['POST', 'GET'])
 def register_user():
-    if not database.check_admin_token():
-        #  Redirect to login
-        pass
+    if not database.check_admin_token(request.cookies.get("tovel_token_admin")):
+        resp = make_response(redirect("/admin?sessionexpired"))
+        resp.set_cookie('tovel_token_admin', '', expires=0)
+        return resp
     registration_outcome = ""
     if request.method == "POST":
         name = request.form["name"]
@@ -93,6 +95,7 @@ def register_user():
             registration_outcome = '''<div class="alert alert-success"
                                     role="alert">User registration was successful. User's password is <b><pre>'''+ new_user_password + '''
                                     </pre></b></div>'''
+            ethereum.log_user_registration(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True), new_user.get_id())
         else:
             registration_outcome = '''<div class="alert alert-danger"
                                     role="alert">User with same username already exists</div>'''
@@ -107,7 +110,7 @@ def loginPage():
     password = request.form["password"]
     user_id = database.get_id_from_username(username)
     if user_id is None:
-        ethereum.report_login_failure()  # Report false username
+        ethereum.report_login_failure(request.remote_addr)  # Report false username
         resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
     # The user ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB
@@ -136,7 +139,7 @@ def adminLoginPage():
     password = request.form["password"]
     admin_id = database.get_admin_id_from_username(username)
     if admin_id is None:
-        ethereum.report_login_failure()  # Report false username
+        ethereum.report_login_failure(request.remote_address)  # Report false username
         resp = make_response(redirect("/admin?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
     # The admin ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB
@@ -147,10 +150,10 @@ def adminLoginPage():
 
     if database.check_admin(username) and admin.verify_pw(password):  # If the authentication is successful
         ethereum.save_auth_outcome(auth_id, True)  # Update the auth autcome in the blockchain
-        token = Token(user=admin_id, time_delta=30)  # Generate a new token
+        token = Token(user=admin_id, time_delta=120)  # Generate a new token
         database.register_admin_token(token)  # Register it to the DB
         resp = make_response(redirect("/admin"))  # Redirect to the homepage
-        resp.set_cookie("tovel_token", token.get_token_value())  # Set the cookie
+        resp.set_cookie("tovel_token_admin", token.get_token_value())  # Set the cookie
         return resp
     else:
         ethereum.save_auth_outcome(auth_id, False)  # Update the auth autcome in the blockchain
