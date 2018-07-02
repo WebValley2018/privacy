@@ -34,6 +34,7 @@ class Transaction:
             "i": "import",
             "r": "user registration"
         }
+        return kinds[self.id[0]]
 
 
 class Ethereum:
@@ -125,9 +126,9 @@ class Ethereum:
         tx_hash = self.user_details.functions.addUser(uid, p_hash).transact()
         self.w3.eth.waitForTransactionReceipt(tx_hash)
 
-    def save_auth_attempt(self, user_id):
+    def save_auth(self, user_id, outcome, admin=False):
         # Save authentication attempt into the blockchain provided the user id, None if the user doesn't exist
-        attempt_id = 'l'+str(uuid4())
+        attempt_id = ('n' if admin else 'l')+str(uuid4())
         # attempt_id is the id of the event
         # The blockchain doesn'th have the capabilities to get the list of transaction
         # moreover, if you have a mismatch between the blockchain and the db it could
@@ -137,27 +138,16 @@ class Ethereum:
         tx_hash = self.logging.functions.addEvent(attempt_id, dumps({
             "timestamp": int(time()),
             "user_id": user_id,
-            "status": "in_progress"
+            "status": outcome
         })).transact()
         self.w3.eth.waitForTransactionReceipt(tx_hash)
-        return attempt_id
 
     def get_event(self, ev_id):
         return self.logging.functions.getEvent(ev_id).call()
-    
-    def save_auth_outcome(self, auth_id, outcome):
-        # Save authentication outcome into the blockchain provided the authentication id
-        # attempt_id is the id of the event, same as above
-        #
-        # Save on the blockchain the attempt_id and the outcome, that can be either True or False
-        event = loads(self.get_event(auth_id))
-        event["status"] = outcome
-        tx_hash = self.logging.functions.addEvent(auth_id, dumps(event)).transact()
-        self.w3.eth.waitForTransactionReceipt(tx_hash)
 
-    def report_login_failure(self, ip):
+    def report_login_failure(self, ip, admin=False):
         #  TODO: Fix IP
-        attempt_id = 'F'+str(uuid4())
+        attempt_id = ('g' if admin else 'F')+str(uuid4())
         #  Save basic transaction data on the DB
         database.save_audit_transaction(attempt_id)
         tx_hash = self.logging.functions.addEvent(attempt_id, dumps({

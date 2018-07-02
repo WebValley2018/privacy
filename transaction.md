@@ -2,6 +2,8 @@
 
 * **`F`**: Nonexisting user tried to login
 * **`l`**: Existing user tried to login
+* **`g`**: Nonexisting admin tried to login
+* **`n`**: Existing admin tried to login
 * **`x`**: User accessed the given dataset
 * **`q`**: User queried the given dataset
 * **`p`**: User changed his password

@@ -114,21 +114,20 @@ def loginPage():
         resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
     # The user ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB
-    auth_id = ethereum.save_auth_attempt(user_id)
     # Store in the blockchain the authentication attempt and get the ID stored in the blockchain
     user = database.get_user_from_id(user_id)
     # Get the User object from the database
     user.set_pw_hash(ethereum.get_user(user_id).user_pwd_hash)
     # Update the user object with the hash from the blockchain
     if database.check_user(username) and user.verify_pw(password):  # If the authentication is successful
-        ethereum.save_auth_outcome(auth_id, True)  # Update the auth autcome in the blockchain
+        ethereum.save_auth_outcome(user_id, True)  # Update the auth autcome in the blockchain
         token = Token(user = user_id)  # Generate a new token
         database.register_token(token)  # Register it to the DB
         resp = make_response(redirect("/"))  # Redirect to the homepage
         resp.set_cookie("tovel_token", token.get_token_value())  # Set the cookie
         return resp
     else:
-        ethereum.save_auth_outcome(auth_id, False)  # Update the auth autcome in the blockchain
+        ethereum.save_auth(user_id, False)  # Update the auth autcome in the blockchain
         resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
 
@@ -139,24 +138,23 @@ def adminLoginPage():
     password = request.form["password"]
     admin_id = database.get_admin_id_from_username(username)
     if admin_id is None:
-        ethereum.report_login_failure(request.remote_address)  # Report false username
+        ethereum.report_login_failure(request.remote_address, True)  # Report false username
         resp = make_response(redirect("/admin?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
     # The admin ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB
-    auth_id = ethereum.save_auth_attempt(admin_id)
     # Store in the blockchain the authentication attempt and get the ID stored in the blockchain
     admin = database.get_admin(admin_id)
     # Get the Admin object from the database
 
     if database.check_admin(username) and admin.verify_pw(password) and admin.verify_otp(request.form["totp"]):  # If the authentication is successful
-        ethereum.save_auth_outcome(auth_id, True)  # Update the auth autcome in the blockchain
+        ethereum.save_auth(auth_id, True, True)  # Update the auth autcome in the blockchain
         token = Token(user=admin_id, time_delta=120)  # Generate a new token
         database.register_admin_token(token)  # Register it to the DB
         resp = make_response(redirect("/admin"))  # Redirect to the homepage
         resp.set_cookie("tovel_token_admin", token.get_token_value())  # Set the cookie
         return resp
     else:
-        ethereum.save_auth_outcome(auth_id, False)  # Update the auth autcome in the blockchain
+        ethereum.save_auth_outcome(auth_id, False, True)  # Update the auth autcome in the blockchain
         resp = make_response(redirect("/admin?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
 
