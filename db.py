@@ -84,7 +84,7 @@ class DB:
             "int": int,
             "float": float,
             "str": str,
-            "datetime.date": lambda x: x.timestamp()
+            "datetime.date": lambda x: x.strftime('%s')
         }
         return str(functions[typestring](variable))
     
@@ -102,7 +102,10 @@ class DB:
         self.cursor.execute(query)
         self.mariadb_connection.commit()
         data = file.get_data()
-        print(data)
+        for d in data:
+            query = f"""INSERT INTO `{dataset_name}` VALUES({', '.join(["%s" for _ in columns])});"""
+            self.cursor.execute(query, tuple(self.cast_python_type_for_sql(columns_data_type[columns[i]], c) for i,c in enumerate(d)))
+        self.mariadb_connection.commit()
 
 d = DB()
 d.import_excel("TestData.xlsx", "Test dataset")
