@@ -4,13 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Tovel - Login</title>
+    <title>Tovel - Admin Console</title>
     <link rel="stylesheet" href="/static/css/bootstrap.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light mr-auto">
-        <span class="navbar-brand">Tovel admin console</span> <span class="nav-link disabled">#Name</span>
-        <a class="nav-link btn btn-outline-info my-2 my-sm-0 ml-auto">Logout</a>
-    </nav>      
+        <span class="navbar-brand">Tovel - Admin Console</span> <span class="nav-link disabled">#Name</span>
+        <a href="/admin/logout" class="nav-link btn btn-outline-info my-2 my-sm-0 ml-auto">Logout</a>
+    </nav>
+    <div class="container">
+        <div class="card d-inline-block" style="width: 18rem; min-height: 10rem; margin: 1em;" >
+          <div class="card-body">
+            <h5 class="card-title">Register User</h5>
+            <p class="card-text">Create a new trusted or untrusted user of the Database</p>
+            <a href="/admin/register-user" class="btn btn-primary">Register</a>
+          </div>
+        </div>
+        <div class="card d-inline-block" style="width: 18rem; min-height: 10rem; margin: 1em;" >
+          <div class="card-body">
+            <h5 class="card-title">Import Dataset</h5>
+              <p class="card-text">Import new dataset from Microsoft <sup>&reg;</sup> Excel</p>
+            <a href="/admin" class="btn btn-primary">Import</a>
+          </div>
+        </div>
+        <div class="card d-inline-block" style="width: 18rem; min-height: 10rem; margin: 1em;" >
+          <div class="card-body">
+            <h5 class="card-title">Log Panel</h5>
+            <p class="card-text">View the System Log of the system</p>
+            <a href="/admin" class="btn btn-primary">View</a>
+          </div>
+        </div>
+    </div>
 </body>
 </html>

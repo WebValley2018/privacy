@@ -40,8 +40,15 @@ def mainPage():
 def adminPage():
     if database.check_admin_token(request.cookies.get("tovel_token_admin")):
         # If the user is logged in, let's display his personal page
+        admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
+        replace_list = {
+            "#Name" :  admin.name + " " + admin.surname
+        }
         with open("static-assets/admin.html") as f:
-            return f.read()
+            html = f.read()
+            for search, replace in replace_list.items():
+                html = html.replace(search, replace)
+        return html
     else:
         with open("static-assets/login-admin.html") as f:
             if "tovel_token" in request.cookies:
@@ -100,8 +107,16 @@ def register_user():
             registration_outcome = '''<div class="alert alert-danger"
                                     role="alert">User with same username already exists</div>'''
 
+    admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
+    replace_list = {
+        "#Name": admin.name + " " + admin.surname
+    }
     with open("static-assets/user_registration.html") as f:
-        return f.read().replace("{{outcome}}", registration_outcome)
+        html = f.read()
+        for search, replace in replace_list.items():
+            html = html.replace(search, replace)
+    return html
+
 
 
 @app.route("/login", methods=["POST"])
