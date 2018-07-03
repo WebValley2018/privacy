@@ -11,7 +11,6 @@
     <script type="text/javascript" src="/static/DataTables/datatables.min.js"></script>
     <script type="text/javascript">
     function getUrlPromise(url) {
-        var table = undefined;
         return new Promise(function(resolve,reject){
             var webrequest = new XMLHttpRequest();
             webrequest.open('GET', url, true);
@@ -23,7 +22,7 @@
     }
     function loadDS(id){
         getUrlPromise("/get-dataset/json/"+id).then(function(r){
-            if(table !== undefined) table.destroy()
+            $('#tb_wrp')[0].innerHTML='<table id="qry_result"></table>'
             table = $('#qry_result').DataTable(JSON.parse(r));
         });
     }
@@ -40,7 +39,7 @@
             <div class="col-sm-4">
                 #btns
             </div>
-            <div class="col-sm-8"><div class="table-responsive"><table id="qry_result"></table></div></div>
+            <div class="col-sm-8"><div id="tb_wrp" class="table-responsive"><table id="qry_result"></table></div></div>
         </div>
     </div>
 </body>
