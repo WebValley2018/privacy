@@ -2,17 +2,19 @@ from uuid import uuid4
 import hashlib
 
 from flask import Flask, request, make_response, redirect
+from middleware import healthCheckMW
 from db import DB
 from ethereum import Ethereum
 from auth_token import Token
 from user import User
 import utilities
-app = Flask(__name__)
 
+app = Flask(__name__)
 
 database = DB()
 ethereum=Ethereum()
 
+app.wsgi_app = healthCheckMW(app.wsgi_app)
 # Main page
 
 
@@ -185,6 +187,31 @@ def register_user():
             html = html.replace(search, replace)
     return html.replace("{{outcome}}", registration_outcome)
 
+@app.route("/admin/log")
+def adminLog():
+    if not database.check_admin_token(request.cookies.get("tovel_token_admin")):
+        resp = make_response(redirect("/admin?sessionexpired"))
+        resp.set_cookie('tovel_token_admin', '', expires=0)
+        return resp
+    admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
+    trs = ethereum.get_audit_data()
+    data = ""
+    for t in trs:
+        data += '''<div class="alert alert-''' + t.security_score() + '''"
+                                        role="alert">''' + t.event_description() + '</div>'
+
+    replace_list = {
+        "#Name": admin.name + " " + admin.surname,
+        "{{transactions}}": data,
+        "{{warning}}": '''<div class="alert alert-danger mb-5"
+                                    role="alert">Warning: the log on the blockchain doesn't match 
+                                    with the log on the database</div>''' if not ethereum.healthy_log() else ''
+    }
+    with open("static-assets/log.html") as f:
+        html = f.read()
+        for search, replace in replace_list.items():
+            html = html.replace(search, replace)
+    return html
 
 
 @app.route("/login", methods=["POST"])
@@ -221,7 +248,7 @@ def adminLoginPage():
     password = request.form["password"]
     admin_id = database.get_admin_id_from_username(username)
     if admin_id is None:
-        ethereum.report_login_failure(request.remote_address, True)  # Report false username
+        ethereum.report_login_failure(request.remote_addr, True)  # Report false username
         resp = make_response(redirect("/admin?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
     # The admin ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB

@@ -22,10 +22,10 @@ class Transaction:
     
     def event_description(self):
         kinds = {
-            "F": "Unrecognized user with IP address #ip tried to login",
-            "l": "User tried to login",
-            "g": "Nonexisting admin tried to login",
-            "n": "Existing admin tried to login",
+            "F": "Unrecognized user with IP address #IP tried to login",
+            "l": "User " + ("#userid logged in" if (self.data["status"] if "status" in self.data.keys() else '') else "failed to log in"),
+            "g": "Nonexisting admin tried to login from IP address #IP",
+            "n": "Existing admin #adminid " + ("logged in" if (self.data["status"] if "status" in self.data.keys() else '') else "failed to log in"),
             "x": "User accessed the dataset '#dataset'",
             "q": "User queried the dataset '#dataset'",
             "p": "User changed his password",
@@ -36,14 +36,27 @@ class Transaction:
             "i": "import",
             "r": "user registration"
         }
-        return kinds[self.id[0]]
+        kind = kinds[self.id[0]]
+        if self.id[0] == "n":
+            if "status" in self.data.keys():
+                admin = database.get_admin(self.data["user_id"])
+                kind = kind.replace("#adminid", admin.name + " " + admin.surname)
+            else:
+                kind = kind.replace("#adminid", "")
+        if self.id[0] == "l" and "status" in self.data.keys():
+            user = database.get_user_from_id(self.data["user_id"])
+            kind = kind.replace("#userid", user.name + " " + user.surname + " from " + user.organization)
+
+        for k, val in self.data.items():
+            kind = kind.replace('#' + str(k), str(val))
+        return kind
 
     def security_score(self):
         dict = {
             "F": "danger",
-            "l": "warning" if not self.data["status"] else "success",
-            "g": "success",
-            "n": "warning" if not self.data["status"] else "success",
+            "l": ("warning" if not (self.data["status"] if "status" in self.data.keys() else '') else "success"),
+            "g": "danger",
+            "n": ("warning" if not (self.data["status"] if "status" in self.data.keys() else '') else "success"),
             "x": "success",
             "q": "success",
             "p": "success",
@@ -177,7 +190,7 @@ class Ethereum:
         self.w3.eth.waitForTransactionReceipt(tx_hash)
     
     def get_audit_len(self):
-        print(self.logging.functions.getEventsLength().call())
+        return self.logging.functions.getEventsLength().call()
     
     def log_data_access(self, user, dataset):
         transaction_id = "x" + str(uuid4())
@@ -253,7 +266,7 @@ class Ethereum:
         self.w3.eth.waitForTransactionReceipt(tx_hash)
     
     def get_audit_data(self):
-        database.cursor.execute("SELECT * FROM Audit")
+        database.cursor.execute("SELECT * FROM Audit ORDER BY Timestamp DESC")
         return [Transaction(l, self) for l in database.cursor.fetchall()]
     
     def healthy_log(self):
