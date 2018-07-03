@@ -1,3 +1,6 @@
+from uuid import uuid4
+import hashlib
+
 from flask import Flask, request, make_response, redirect
 from db import DB
 from ethereum import Ethereum
@@ -75,12 +78,57 @@ def adminPage():
             else:
                 return f.read().replace("{{loginmessage}}", '')
 
-@app.route("/change-password")
+@app.route("/change-password", methods=["GET", "POST"])
 def changePassword():
-    user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token"), False))
+    #  Check that the user has the authorizations needed
+    if not "tovel_token" in request.cookies and "tovel_token_admin" not in request.cookies:
+        resp = make_response(redirect("/"))
+        return resp
+    elif "tovel_token" in request.cookies and not database.check_token(request.cookies.get("tovel_token")):
+        resp = make_response(redirect("/?sessionexpired"))
+        resp.set_cookie('tovel_token', '', expires=0)
+        return resp
+    elif "tovel_token_admin" in request.cookies and not database.check_admin_token(request.cookies.get("tovel_token_admin")):
+        resp = make_response(redirect("/admin?sessionexpired"))
+        resp.set_cookie('tovel_token_admin', '', expires=0)
+        return resp
+    
+    #  Get user data
+    user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token"), False)) if "tovel_token" in request.cookies else database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
     replace_list = {
-        "#Name": user.name + " " + user.surname
+        "#Name": user.name + " " + user.surname,
+        "{{outcome}}": '',
+        "{{security}}": "3" if "tovel_token" in request.cookies else "4"
     }
+
+    if request.method == "POST":
+        #  If the form has been submitted
+        if "tovel_token" in request.cookies:
+            user_id = user.id
+            #  Procedure for the regular user
+            user.set_pw_hash(ethereum.get_user(database.get_userid_from_token(request.cookies.get("tovel_token"), False)).user_pwd_hash)
+            if user.verify_pw(request.form["old_password"]): #  If the saved password matches with the one provided by the user
+                salt = str(uuid4().hex)
+                database.change_user_salt(user_id, salt)
+                #  Update the salt in DB
+                hash_pw = hashlib.sha512((request.form["password"] + salt).encode("utf-8")).hexdigest()
+                ethereum.set_user_hash(user_id, hash_pw)
+                replace_list["{{outcome}}"] = '''<div class="alert alert-success"
+                                    role="alert">Password has been changed successfully</div>'''
+                ethereum.log_change_pwd(user_id)
+            else:
+                replace_list["{{outcome}}"] = '''<div class="alert alert-danger"
+                                    role="alert">Please check your old password</div>'''
+
+        elif "tovel_token_admin" in request.cookies:
+            #  Procedure for the admins
+            if database.change_admin_pwd(user, request.form["old_password"], request.form["password"]):
+                replace_list["{{outcome}}"] = '''<div class="alert alert-success"
+                            role="alert">Password has been changed successfully</div>'''
+            else:
+                replace_list["{{outcome}}"] = '''<div class="alert alert-danger"
+                            role="alert">Please check your old password</div>'''
+    
     with open("static-assets/change_password.html") as f:
         html = f.read()
         for search, replace in replace_list.items():

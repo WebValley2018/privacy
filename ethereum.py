@@ -223,7 +223,7 @@ class Ethereum:
         self.w3.eth.waitForTransactionReceipt(tx_hash)
     
     def log_user_registration(self, admin, user):
-        transaction_id = "t" + str(uuid4())
+        transaction_id = "r" + str(uuid4())
         database.save_audit_transaction(transaction_id)
         tx_hash = self.logging.functions.addEvent(transaction_id, dumps({
             "timestamp": int(time()),

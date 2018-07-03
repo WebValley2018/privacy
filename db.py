@@ -1,5 +1,7 @@
 from collections import namedtuple
 from time import localtime, time
+from uuid import uuid4
+import hashlib
 from admin import Admin
 
 
@@ -157,7 +159,6 @@ class DB:
     def get_userid_from_token(self, token, admin=False):
         self.cursor.execute("SELECT User FROM "+("Admin" if admin else '')+"Token WHERE TokenValue = %s", (token, ))
         return self.cursor.fetchall()[0][0].decode("utf-8")
-        return True
     
     def python_type_to_sql(self, t):
         """This method converts Python type names to the matching SQL ones"""
@@ -183,6 +184,7 @@ class DB:
     def _get_parameters_generate_table(self, a, d):
         for e in a:
             yield from (e, self.python_type_to_sql(d[e]))
+    
     def import_excel(self, fn, dataset_name):
         file = Excel(fn)
         #  Add table based on Excel file columns
@@ -197,4 +199,19 @@ class DB:
         for d in data:
             query = f"""INSERT INTO `{dataset_name}` VALUES({', '.join(["%s" for _ in columns])});"""
             self.cursor.execute(query, tuple(self.cast_python_type_for_sql(columns_data_type[columns[i]], c) for i,c in enumerate(d)))
+        self.mariadb_connection.commit()
+    
+    def change_admin_pwd(self, admin, oldpwd, pwd):
+        """This function changes admin's password given the old password and the new password. Returns True on success"""
+        if admin.verify_pw(oldpwd):
+            salt = str(uuid4().hex)
+            hash_pw = hashlib.sha512((pwd + salt).encode("utf-8")).hexdigest()
+            self.cursor.execute("UPDATE Administrators SET Salt = %s, Password = %s WHERE ID = %s", (salt, hash_pw, admin.id))
+            self.mariadb_connection.commit()
+            return True
+        else:
+            return False
+    
+    def change_user_salt(self, userid, salt):
+        self.cursor.execute("UPDATE Users SET Salt = %s WHERE ID = %s", (salt, userid))
         self.mariadb_connection.commit()
