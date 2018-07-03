@@ -194,13 +194,14 @@ class DB:
         columns_data_type={c: file.get_data_type(i) for i, c in enumerate(columns)}
         self.cursor.execute("INSERT INTO Datasets VALUES (%s, %s)", (dataset_name, dataset_id))
         #  TODO: Sanitize the query
-        query = f'''CREATE TABLE `{dataset_name}` ({', '.join(f'`{c if c else "column_"+str(i)}` {self.python_type_to_sql(columns_data_type[c])}' for i,c in enumerate(columns))});'''
+        query = f'''CREATE TABLE `{dataset_name}` (_row_id TEXT, {', '.join(f'`{c if c else "column_"+str(i)}` {self.python_type_to_sql(columns_data_type[c])}' for i,c in enumerate(columns))});'''
         self.cursor.execute(query)
         self.mariadb_connection.commit()
         data = file.get_data()
         for d in data:
-            query = f"""INSERT INTO `{dataset_name}` VALUES({', '.join(["%s" for _ in columns])});"""
-            self.cursor.execute(query, tuple(self.cast_python_type_for_sql(columns_data_type[columns[i]], c) for i,c in enumerate(d)))
+            row_id = str(uuid4()).replace('-','')
+            query = f"""INSERT INTO `{dataset_name}` VALUES(%s, {', '.join(["%s" for _ in columns])});"""
+            self.cursor.execute(query, (row_id,) + tuple(self.cast_python_type_for_sql(columns_data_type[columns[i]], c) for i,c in enumerate(d)))
             self.mariadb_connection.commit()
     
     def change_admin_pwd(self, admin, oldpwd, pwd):
@@ -227,9 +228,9 @@ class DB:
         dataset_name = self.cursor.fetchall()[0][0]
         self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
         #print(self.cursor.fetchall())
-        colonne = [{"title": row[3]} for row in self.cursor.fetchall()]
+        colonne = [{"title": row[3]} for row in self.cursor.fetchall()[1:]]
         self.cursor.execute("SELECT * FROM `"+str(dataset_name.decode('utf-8'))+"`;")
-        return {"data": [[str(j.decode("utf-8")) if type(j) is bytes else j for j in list(r)] for r in list(self.cursor)], "columns": colonne}
+        return {"data": [[str(j.decode("utf-8")) if type(j) is bytes else j for j in list(r)] for r in list(self.cursor)[1:]], "columns": colonne}
     
     def get_datasets(self):
         self.cursor.execute("SELECT Name, ID FROM Datasets")
