@@ -244,32 +244,6 @@ def adminLog():
             html = html.replace(search, replace)
     return html
 
-
-@app.route("/login", methods=["POST"])
-def loginPage():
-    username = request.form["username"]
-    password = request.form["password"]
-    user_id = database.get_id_from_username(username)
-    if user_id is None:
-        ethereum.report_login_failure(request.remote_addr)  # Report false username
-        resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
-        return resp
-    # The user ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB
-    # Store in the blockchain the authentication attempt and get the ID stored in the blockchain
-    user = database.get_user_from_id(user_id)
-    # Get the User object from the database
-    user.set_pw_hash(ethereum.get_user(user_id).user_pwd_hash)
-    # Update the user object with the hash from the blockchain
-    if database.check_user(username) and user.verify_pw(password):  # If the authentication is successful
-        ethereum.save_auth(user_id, True)  # Update the auth autcome in the blockchain
-        token = Token(user = user_id, time_delta=60*5)  # Generate a new token
-        database.register_token(token)  # Register it to the DB
-        resp = make_response(redirect("/"))  # Redirect to the homepage
-        resp.set_cookie("tovel_token", token.get_token_value())  # Set the cookie
-        return resp
-    else:
-        ethereum.save_auth(user_id, False)  # Update the auth autcome in the blockchain
-        resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
 @app.route("/admin/import-xls", methods = ['POST', 'GET'])
 def import_excel():
     if not database.check_admin_token(request.cookies.get("tovel_token_admin")):
