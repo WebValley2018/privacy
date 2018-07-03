@@ -24,6 +24,8 @@ class Transaction:
         kinds = {
             "F": "Unrecognized user with IP address #ip tried to login",
             "l": "User tried to login",
+            "g": "Nonexisting admin tried to login",
+            "n": "Existing admin tried to login",
             "x": "User accessed the dataset '#dataset'",
             "q": "User queried the dataset '#dataset'",
             "p": "User changed his password",
@@ -35,6 +37,24 @@ class Transaction:
             "r": "user registration"
         }
         return kinds[self.id[0]]
+
+    def security_score(self):
+        dict = {
+            "F": "danger",
+            "l": "warning" if not self.data["status"] else "success",
+            "g": "success",
+            "n": "warning" if not self.data["status"] else "success",
+            "x": "success",
+            "q": "success",
+            "p": "success",
+            "m": "success",
+            "D": "success",
+            "t": "warning",
+            "h": "danger",
+            "i": "success",
+            "r": "success"
+        }
+        return dict[self.id[0]]
 
 
 class Ethereum:
