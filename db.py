@@ -3,6 +3,7 @@ from time import localtime, time
 from uuid import uuid4
 import hashlib
 from admin import Admin
+import json
 
 
 from auth_token import Token
@@ -174,7 +175,7 @@ class DB:
     def cast_python_type_for_sql(self, typestring, variable):
         functions = {
             "bool": int,
-            "int": int,
+            "int": lambda x: int(x) if x else None,
             "float": float,
             "str": str,
             "datetime.date": lambda x: x.strftime('%s')
@@ -193,14 +194,14 @@ class DB:
         columns_data_type={c: file.get_data_type(i) for i, c in enumerate(columns)}
         self.cursor.execute("INSERT INTO Datasets VALUES (%s, %s)", (dataset_name, dataset_id))
         #  TODO: Sanitize the query
-        query = f'''CREATE TABLE `{dataset_name}` ({', '.join(f'`{c}` {self.python_type_to_sql(columns_data_type[c])}' for c in columns)});'''
+        query = f'''CREATE TABLE `{dataset_name}` ({', '.join(f'`{c if c else "column_"+str(i)}` {self.python_type_to_sql(columns_data_type[c])}' for i,c in enumerate(columns))});'''
         self.cursor.execute(query)
         self.mariadb_connection.commit()
         data = file.get_data()
         for d in data:
             query = f"""INSERT INTO `{dataset_name}` VALUES({', '.join(["%s" for _ in columns])});"""
             self.cursor.execute(query, tuple(self.cast_python_type_for_sql(columns_data_type[columns[i]], c) for i,c in enumerate(d)))
-        self.mariadb_connection.commit()
+            self.mariadb_connection.commit()
     
     def change_admin_pwd(self, admin, oldpwd, pwd):
         """This function changes admin's password given the old password and the new password. Returns True on success"""
@@ -220,3 +221,16 @@ class DB:
     def check_dataset_exsistence(self, dataset):
         self.cursor.execute("SELECT * FROM Datasets WHERE Name = %s;", (dataset,))
         return len(self.cursor.fetchall()) == 1
+    
+    def get_dataset(self, dataset_id):
+        self.cursor.execute("SELECT Name FROM Datasets WHERE ID = %s",(dataset_id,))
+        dataset_name = self.cursor.fetchall()[0][0]
+        self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
+        #print(self.cursor.fetchall())
+        colonne = [{"title": row[3]} for row in self.cursor.fetchall()]
+        self.cursor.execute("SELECT * FROM `"+str(dataset_name.decode('utf-8'))+"`;")
+        return {"data": [[str(j.decode("utf-8")) if type(j) is bytes else j for j in list(r)] for r in list(self.cursor)], "columns": colonne}
+    
+    def get_datasets(self):
+        self.cursor.execute("SELECT Name, ID FROM Datasets")
+        return [{"name":e[0].decode("utf-8"), "id": e[1].decode("utf-8")} for e in self.cursor.fetchall()]
