@@ -232,6 +232,16 @@ class Ethereum:
         })).transact()
         self.w3.eth.waitForTransactionReceipt(tx_hash)
     
+    def log_dataset_import(self, admin, dataset):
+        transaction_id = "i" + str(uuid4())
+        database.save_audit_transaction(transaction_id)
+        tx_hash = self.logging.functions.addEvent(transaction_id, dumps({
+            "timestamp": int(time()),
+            "dataset": dataset,
+            "admin": admin
+        })).transact()
+        self.w3.eth.waitForTransactionReceipt(tx_hash)
+    
     def get_audit_data(self):
         database.cursor.execute("SELECT * FROM Audit")
         return [Transaction(l, self) for l in database.cursor.fetchall()]

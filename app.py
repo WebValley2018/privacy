@@ -1,13 +1,17 @@
 from uuid import uuid4
 import hashlib
+import os
 
 from flask import Flask, request, make_response, redirect
+from werkzeug.utils import secure_filename
 from db import DB
 from ethereum import Ethereum
 from auth_token import Token
 from user import User
 import utilities
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = "uploads"
+
 
 
 database = DB()
@@ -34,37 +38,6 @@ def mainPage():
             if "tovel_token" in request.cookies:
                 resp = make_response(redirect("/?sessionexpired"))
                 resp.set_cookie('tovel_token', '', expires=0)
-                return resp
-            elif "sessionexpired" in request.args:  # if redirected to "session expired" print Warning message
-                return f.read().replace("{{loginmessage}}", '''<div class="alert alert-warning" 
-                                            role="alert">Session expired or not valid</div>''')
-            elif "loginfailed" in request.args:    # if redirected to "loginfailed" print Error message
-                return f.read().replace("{{loginmessage}}", '''<div class="alert alert-danger"
-                                            role="alert">Login failed. Please check your credentials</div>''')
-            elif "logoutsuccess" in request.args:  # if redirected to "logoutsuccess" print Success message
-                return f.read().replace("{{loginmessage}}", '''<div class="alert alert-success"
-                                            role="alert">Logout succeded</div>''')
-            else:
-                return f.read().replace("{{loginmessage}}", '')
-
-@app.route("/admin")
-def adminPage():
-    if database.check_admin_token(request.cookies.get("tovel_token_admin")):
-        # If the user is logged in, let's display his personal page
-        admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
-        replace_list = {
-            "#Name" :  admin.name + " " + admin.surname
-        }
-        with open("static-assets/admin.html") as f:
-            html = f.read()
-            for search, replace in replace_list.items():
-                html = html.replace(search, replace)
-        return html
-    else:
-        with open("static-assets/login-admin.html") as f:
-            if "tovel_token" in request.cookies:
-                resp = make_response(redirect("/admin?sessionexpired"))
-                resp.set_cookie('tovel_token_admin', '', expires=0)
                 return resp
             elif "sessionexpired" in request.args:  # if redirected to "session expired" print Warning message
                 return f.read().replace("{{loginmessage}}", '''<div class="alert alert-warning" 
@@ -142,6 +115,64 @@ def logoutPage():
     resp.set_cookie('tovel_token', '', expires=0)
     return resp  # Redirect to the /
 
+@app.route("/login", methods=["POST"])
+def loginPage():
+    username = request.form["username"]
+    password = request.form["password"]
+    user_id = database.get_id_from_username(username)
+    if user_id is None:
+        ethereum.report_login_failure(request.remote_address)  # Report false username
+        resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
+        return resp
+    # The user ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB
+    # Store in the blockchain the authentication attempt and get the ID stored in the blockchain
+    user = database.get_user_from_id(user_id)
+    # Get the User object from the database
+    user.set_pw_hash(ethereum.get_user(user_id).user_pwd_hash)
+    # Update the user object with the hash from the blockchain
+    if database.check_user(username) and user.verify_pw(password):  # If the authentication is successful
+        ethereum.save_auth(user_id, True)  # Update the auth autcome in the blockchain
+        token = Token(user = user_id, time_delta=60*5)  # Generate a new token
+        database.register_token(token)  # Register it to the DB
+        resp = make_response(redirect("/"))  # Redirect to the homepage
+        resp.set_cookie("tovel_token", token.get_token_value())  # Set the cookie
+        return resp
+    else:
+        ethereum.save_auth(user_id, False)  # Update the auth autcome in the blockchain
+        resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
+        return resp
+
+@app.route("/admin")
+def adminPage():
+    if database.check_admin_token(request.cookies.get("tovel_token_admin")):
+        # If the user is logged in, let's display his personal page
+        admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
+        replace_list = {
+            "#Name" :  admin.name + " " + admin.surname
+        }
+        with open("static-assets/admin.html") as f:
+            html = f.read()
+            for search, replace in replace_list.items():
+                html = html.replace(search, replace)
+        return html
+    else:
+        with open("static-assets/login-admin.html") as f:
+            if "tovel_token" in request.cookies:
+                resp = make_response(redirect("/admin?sessionexpired"))
+                resp.set_cookie('tovel_token_admin', '', expires=0)
+                return resp
+            elif "sessionexpired" in request.args:  # if redirected to "session expired" print Warning message
+                return f.read().replace("{{loginmessage}}", '''<div class="alert alert-warning" 
+                                            role="alert">Session expired or not valid</div>''')
+            elif "loginfailed" in request.args:    # if redirected to "loginfailed" print Error message
+                return f.read().replace("{{loginmessage}}", '''<div class="alert alert-danger"
+                                            role="alert">Login failed. Please check your credentials</div>''')
+            elif "logoutsuccess" in request.args:  # if redirected to "logoutsuccess" print Success message
+                return f.read().replace("{{loginmessage}}", '''<div class="alert alert-success"
+                                            role="alert">Logout succeded</div>''')
+            else:
+                return f.read().replace("{{loginmessage}}", '')
+
 @app.route("/admin/logout")
 def adminLogoutPage():
     database.set_admin_token_ttl(request.cookies.get("tovel_token_admin"))
@@ -185,35 +216,41 @@ def register_user():
             html = html.replace(search, replace)
     return html.replace("{{outcome}}", registration_outcome)
 
-
-
-@app.route("/login", methods=["POST"])
-def loginPage():
-    username = request.form["username"]
-    password = request.form["password"]
-    user_id = database.get_id_from_username(username)
-    if user_id is None:
-        ethereum.report_login_failure(request.remote_addr)  # Report false username
-        resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
+@app.route("/admin/import-xls", methods = ['POST', 'GET'])
+def import_excel():
+    if not database.check_admin_token(request.cookies.get("tovel_token_admin")):
+        resp = make_response(redirect("/admin?sessionexpired"))
+        resp.set_cookie('tovel_token_admin', '', expires=0)
         return resp
-    # The user ID is needed for the blockchain to get the password hash, so let's retrieve it from the DB
-    # Store in the blockchain the authentication attempt and get the ID stored in the blockchain
-    user = database.get_user_from_id(user_id)
-    # Get the User object from the database
-    user.set_pw_hash(ethereum.get_user(user_id).user_pwd_hash)
-    # Update the user object with the hash from the blockchain
-    if database.check_user(username) and user.verify_pw(password):  # If the authentication is successful
-        ethereum.save_auth(user_id, True)  # Update the auth autcome in the blockchain
-        token = Token(user = user_id, time_delta=60*5)  # Generate a new token
-        database.register_token(token)  # Register it to the DB
-        resp = make_response(redirect("/"))  # Redirect to the homepage
-        resp.set_cookie("tovel_token", token.get_token_value())  # Set the cookie
-        return resp
-    else:
-        ethereum.save_auth(user_id, False)  # Update the auth autcome in the blockchain
-        resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
-        return resp
+    upload_outcome = ""
+    if request.method == "POST":
+        if 'xls' not in request.files:
+            upload_outcome = '''<div class="alert alert-danger"
+                                    role="alert">The system was unable to import your data</div>'''
+        else:
+            file = request.files['file']
+            if file.filename == '':
+                upload_outcome = '''<div class="alert alert-danger"
+                                    role="alert">The system was unable to import your data</div>'''
+            else:
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
+                upload_outcome = '''<div class="alert alert-success"
+                                        role="alert">Data import was successful</div>'''
+                dataset_id = database.import_excel() #  TODO: save
+                ethereum.log_user_registration(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True), new_user.get_id())
+        
+
+    admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
+    replace_list = {
+        "#Name": admin.name + " " + admin.surname
+    }
+    with open("static-assets/user_registration.html") as f:
+        html = f.read()
+        for search, replace in replace_list.items():
+            html = html.replace(search, replace)
+    return html.replace("{{outcome}}", upload_outcome)
 
 @app.route("/admin/login", methods=["POST"])
 def adminLoginPage():
