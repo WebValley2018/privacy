@@ -6,8 +6,28 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Tovel - Query datas</title>
     <link rel="stylesheet" href="/static/css/bootstrap.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+    <script type="text/javascript" src="/static/js/jquery.js"></script>
     <link rel="stylesheet" type="text/css" href="/static/DataTables/datatables.min.css"/>
     <script type="text/javascript" src="/static/DataTables/datatables.min.js"></script>
+    <script type="text/javascript">
+    function getUrlPromise(url) {
+        var table = undefined;
+        return new Promise(function(resolve,reject){
+            var webrequest = new XMLHttpRequest();
+            webrequest.open('GET', url, true);
+            webrequest.onload=function(){
+                resolve(webrequest.responseText);
+            };
+            webrequest.send(null);
+        });
+    }
+    function loadDS(id){
+        getUrlPromise("/get-dataset/json/"+id).then(function(r){
+            if(table !== undefined) table.destroy()
+            table = $('#qry_result').DataTable(JSON.parse(r));
+        });
+    }
+    </script>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light mr-auto">
@@ -16,7 +36,12 @@
     </nav>
 
     <div class="container">
-        <table id="qry_result"></table>
+        <div class="row">
+            <div class="col-sm-4">
+                #btns
+            </div>
+            <div class="col-sm-8"><div class="table-responsive"><table id="qry_result"></table></div></div>
+        </div>
     </div>
 </body>
 </html>

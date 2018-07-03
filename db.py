@@ -3,7 +3,6 @@ from time import localtime, time
 from uuid import uuid4
 import hashlib
 from admin import Admin
-import simplejson
 import json
 
 
@@ -228,6 +227,10 @@ class DB:
         dataset_name = self.cursor.fetchall()[0][0]
         self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
         #print(self.cursor.fetchall())
-        colonne = [row[3] for row in self.cursor.fetchall()]
+        colonne = [{"title": row[3]} for row in self.cursor.fetchall()]
         self.cursor.execute("SELECT * FROM `"+str(dataset_name.decode('utf-8'))+"`;")
-        return {"data": self.cursor.fetchall(), "columns": colonne}
+        return {"data": [[str(j.decode("utf-8")) if type(j) is bytes else j for j in list(r)] for r in list(self.cursor)], "columns": colonne}
+    
+    def get_datasets(self):
+        self.cursor.execute("SELECT Name, ID FROM Datasets")
+        return [{"name":e[0].decode("utf-8"), "id": e[1].decode("utf-8")} for e in self.cursor.fetchall()]

@@ -1,6 +1,7 @@
 from uuid import uuid4
 import hashlib
 import os
+from json import dumps
 
 from flask import Flask, request, make_response, redirect
 from middleware import healthCheckMW
@@ -146,8 +147,33 @@ def loginPage():
 
 @app.route("/get-dataset/<format>/<dataset_id>")
 def get_dataset(format, dataset_id):
-    if format == 'json':
-        return "dataset"
+    if database.check_token(request.cookies.get("tovel_token")):
+        if format == 'json':
+            ethereum.log_data_access(database.get_userid_from_token(request.cookies.get("tovel_token"), False), dataset_id)
+            return dumps(database.get_dataset(dataset_id))
+    else:
+        return "{\"error\": \"Session expired\"}"
+
+@app.route("/query")
+def query():
+    if database.check_token(request.cookies.get("tovel_token")):
+        # If the user is logged in, let's display his personal page
+        user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token"), False))
+        buttons = ""
+        for dataset in database.get_datasets():
+            buttons = buttons + f"<button type=\"button\" class=\"btn btn-primary btn-lg btn-block\" onclick=\"loadDS('{dataset['id']}');\">{dataset['name']}</button>\n"
+        replace_list = {
+            "#Name" :  user.name + " " + user.surname,
+            "#btns": buttons
+        }
+        with open("static-assets/query.html") as f:
+            html = f.read()
+            for search, replace in replace_list.items():
+                html = html.replace(search, replace)
+        return html
+    else:
+        resp = make_response(redirect("/"))
+        return resp  # Redirect to the /
 
 @app.route("/admin")
 def adminPage():
