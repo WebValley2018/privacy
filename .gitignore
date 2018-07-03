@@ -1,7 +1,5 @@
 .DS_Store
 *.pyc
 __pycache__/*
-smart-contracts/*.json
 toveldemo
-smart-contracts/*.json
 uploads/*

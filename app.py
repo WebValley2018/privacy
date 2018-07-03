@@ -10,6 +10,7 @@ from ethereum import Ethereum
 from auth_token import Token
 from user import User
 import utilities
+from time import strftime, gmtime
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = "uploads"
@@ -229,7 +230,7 @@ def adminLog():
     data = ""
     for t in trs:
         data += '''<div class="alert alert-''' + t.security_score() + '''"
-                                        role="alert">''' + t.event_description() + '</div>'
+                                        role="alert">''' + t.event_description() + '<br>' + strftime("%a, %d %b %Y %H:%M:%S", gmtime(t.timestamp)) + '</div>'
 
     replace_list = {
         "#Name": admin.name + " " + admin.surname,
