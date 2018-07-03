@@ -187,10 +187,11 @@ class DB:
     
     def import_excel(self, fn, dataset_name):
         file = Excel(fn)
+        dataset_id = str(uuid4())
         #  Add table based on Excel file columns
         columns = file.get_columns()
         columns_data_type={c: file.get_data_type(i) for i, c in enumerate(columns)}
-
+        self.cursor.execute("INSERT INTO Datasets VALUES (%s, %s)", (dataset_name, dataset_id))
         #  TODO: Sanitize the query
         query = f'''CREATE TABLE `{dataset_name}` ({', '.join(f'`{c}` {self.python_type_to_sql(columns_data_type[c])}' for c in columns)});'''
         self.cursor.execute(query)
@@ -215,3 +216,7 @@ class DB:
     def change_user_salt(self, userid, salt):
         self.cursor.execute("UPDATE Users SET Salt = %s WHERE ID = %s", (salt, userid))
         self.mariadb_connection.commit()
+
+    def check_dataset_exsistence(self, dataset):
+        self.cursor.execute("SELECT * FROM Datasets WHERE Name = %s;", (dataset,))
+        return len(self.cursor.fetchall()) == 1

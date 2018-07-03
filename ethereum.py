@@ -79,7 +79,7 @@ class Ethereum:
         -- Jakob please implement
     -INITIALIZATION -> FIXIT
     """
-    def __init__(self, providerAddress = 'http://127.0.0.1:7545'):
+    def __init__(self, providerAddress = 'http://192.168.210.173:8545'):
         #  Inizialize Web3 object
         self.w3 = web3.Web3(web3.Web3.HTTPProvider(providerAddress))
         #  Tell the blockchain which account to use
@@ -261,6 +261,16 @@ class Ethereum:
         tx_hash = self.logging.functions.addEvent(transaction_id, dumps({
             "timestamp": int(time()),
             "user": user,
+            "admin": admin
+        })).transact()
+        self.w3.eth.waitForTransactionReceipt(tx_hash)
+    
+    def log_dataset_import(self, admin, dataset):
+        transaction_id = "i" + str(uuid4())
+        database.save_audit_transaction(transaction_id)
+        tx_hash = self.logging.functions.addEvent(transaction_id, dumps({
+            "timestamp": int(time()),
+            "dataset": dataset,
             "admin": admin
         })).transact()
         self.w3.eth.waitForTransactionReceipt(tx_hash)
