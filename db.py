@@ -3,6 +3,8 @@ from time import localtime, time
 from uuid import uuid4
 import hashlib
 from admin import Admin
+import simplejson
+import json
 
 
 from auth_token import Token
@@ -222,6 +224,10 @@ class DB:
         return len(self.cursor.fetchall()) == 1
     
     def get_dataset(self, dataset_id):
-        self.cursor.execute("SELECT Name FROM Dataset WHERE ID = %s",(dataset_id,))
-        dataset_name=self.cursor.fetchall()[0][0]
-        
+        self.cursor.execute("SELECT Name FROM Datasets WHERE ID = %s",(dataset_id,))
+        dataset_name = self.cursor.fetchall()[0][0]
+        self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
+        #print(self.cursor.fetchall())
+        colonne = [row[3] for row in self.cursor.fetchall()]
+        self.cursor.execute("SELECT * FROM `"+str(dataset_name.decode('utf-8'))+"`;")
+        return {"data": self.cursor.fetchall(), "columns": colonne}
