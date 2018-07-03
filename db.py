@@ -220,3 +220,8 @@ class DB:
     def check_dataset_exsistence(self, dataset):
         self.cursor.execute("SELECT * FROM Datasets WHERE Name = %s;", (dataset,))
         return len(self.cursor.fetchall()) == 1
+    
+    def get_dataset(self, dataset_id):
+        self.cursor.execute("SELECT Name FROM Dataset WHERE ID = %s",(dataset_id,))
+        dataset_name=self.cursor.fetchall()[0][0]
+        

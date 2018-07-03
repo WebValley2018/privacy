@@ -144,6 +144,11 @@ def loginPage():
         resp = make_response(redirect("/?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
 
+@app.route("/get-dataset/<format>/<dataset_id>")
+def get_dataset(format, dataset_id):
+    if format == 'json':
+        return "dataset"
+
 @app.route("/admin")
 def adminPage():
     if database.check_admin_token(request.cookies.get("tovel_token_admin")):
