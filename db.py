@@ -174,7 +174,7 @@ class DB:
     def cast_python_type_for_sql(self, typestring, variable):
         functions = {
             "bool": int,
-            "int": int,
+            "int": lambda x: int(x) if x else None,
             "float": float,
             "str": str,
             "datetime.date": lambda x: x.strftime('%s')
@@ -193,7 +193,7 @@ class DB:
         columns_data_type={c: file.get_data_type(i) for i, c in enumerate(columns)}
         self.cursor.execute("INSERT INTO Datasets VALUES (%s, %s)", (dataset_name, dataset_id))
         #  TODO: Sanitize the query
-        query = f'''CREATE TABLE `{dataset_name}` ({', '.join(f'`{c}` {self.python_type_to_sql(columns_data_type[c])}' for c in columns)});'''
+        query = f'''CREATE TABLE `{dataset_name}` ({', '.join(f'`{c if not c =="" else "column_"+str(i)}` {self.python_type_to_sql(columns_data_type[c])}' for i,c in enumerate(columns))});'''
         self.cursor.execute(query)
         self.mariadb_connection.commit()
         data = file.get_data()
