@@ -200,7 +200,7 @@ class DB:
         for d in data:
             query = f"""INSERT INTO `{dataset_name}` VALUES({', '.join(["%s" for _ in columns])});"""
             self.cursor.execute(query, tuple(self.cast_python_type_for_sql(columns_data_type[columns[i]], c) for i,c in enumerate(d)))
-        self.mariadb_connection.commit()
+            self.mariadb_connection.commit()
     
     def change_admin_pwd(self, admin, oldpwd, pwd):
         """This function changes admin's password given the old password and the new password. Returns True on success"""
