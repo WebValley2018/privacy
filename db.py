@@ -193,7 +193,7 @@ class DB:
         columns_data_type={c: file.get_data_type(i) for i, c in enumerate(columns)}
         self.cursor.execute("INSERT INTO Datasets VALUES (%s, %s)", (dataset_name, dataset_id))
         #  TODO: Sanitize the query
-        query = f'''CREATE TABLE `{dataset_name}` ({', '.join(f'`{c if not c =="" else "column_"+str(i)}` {self.python_type_to_sql(columns_data_type[c])}' for i,c in enumerate(columns))});'''
+        query = f'''CREATE TABLE `{dataset_name}` ({', '.join(f'`{c if c else "column_"+str(i)}` {self.python_type_to_sql(columns_data_type[c])}' for i,c in enumerate(columns))});'''
         self.cursor.execute(query)
         self.mariadb_connection.commit()
         data = file.get_data()
