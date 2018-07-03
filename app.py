@@ -323,8 +323,8 @@ def editableTable(dataset):
     for c in ds["columns"]:
         columns += '''<th scope="col">''' + c + '''</th>'''
     data = ''
-    for r in ds["data"]:
-        data += '<tr><td class="filterable-cell"><i class="far fa-edit"></i></td>'
+    for idx, r in enumerate(ds["data"]):
+        data += f'<tr><td class="filterable-cell"><a href="/admin/edit-table/edit-row/{dataset}/{idx}"><i class="far fa-edit"></i></a></td>'
         for c in r:
             data += '''<td class="filterable-cell">''' + str(c) + "</td>"
         data += '</tr>'
@@ -359,8 +359,8 @@ def editRow(dataset, row):
     if request.method == "POST":
         new_values = []
         [new_values.append(request.form[str(c)]) for c in l]
-
-
+        #database.modify_row(dataset, new_values, row)
+        print(new_values)
 
     replace_list = {
         # "#Name": admin.name + " " + admin.surname
