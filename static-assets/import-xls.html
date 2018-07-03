@@ -12,15 +12,12 @@
         <a href="." class="nav-link btn btn-primary my-2 my-sm-0"><span class="badge badge-light">&#9666;</span> Back</a>
         <span class="navbar-brand">Import from Excel</span> <span class="nav-link disabled">#Name</span>
     </nav>
-    <form method="POST" action="login" class="jumbotron container">
+    <form method="POST" action="/admin/import-xls" class="jumbotron container" enctype="multipart/form-data">
         <h1>Tovel - Import from Excel</h1>
         {{outcome}}
-        <div id="match-alert" class="alert alert-danger d-none" role="alert">The two passwords don't match</div>
-        <div id="security-alert" class="alert alert-danger d-none" role="alert">The password you've entered is not secure enough</div>
-        <div class="form-group"><input class="form-control" type="password" name="old_password" placeholder="Old password"></div>
-        <div class="form-group"><input onkeyup="check();" class="form-control" id="pass1" type="password" name="password" placeholder="Password"></label></div>
-        <div class="form-group"><input onkeyup="check();" class="form-control" id="pass2" type="password" placeholder="Password (again)"></label></div>
-        <input type="submit" id="submit" value="Upload" class="btn btn-primary" disabled>
+        <div class="form-group"><input class="form-control" type="text" name="dataset_name" placeholder="Dataset name"></div>
+        <div class="form-group">Upload an Excel file<input class="form-control" type="file" name="xls"></label></div>
+        <input type="submit" id="submit" value="Upload" class="btn btn-primary">
     </form>
 </body>
 </html>

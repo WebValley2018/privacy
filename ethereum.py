@@ -46,7 +46,7 @@ class Ethereum:
         -- Jakob please implement
     -INITIALIZATION -> FIXIT
     """
-    def __init__(self, providerAddress = 'http://127.0.0.1:7545'):
+    def __init__(self, providerAddress = 'http://192.168.210.173:8545'):
         #  Inizialize Web3 object
         self.w3 = web3.Web3(web3.Web3.HTTPProvider(providerAddress))
         #  Tell the blockchain which account to use

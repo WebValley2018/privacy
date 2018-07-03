@@ -224,29 +224,33 @@ def import_excel():
         return resp
     upload_outcome = ""
     if request.method == "POST":
-        if 'xls' not in request.files:
+        if database.check_dataset_exsistence(request.form["dataset_name"]):
+            upload_outcome = '''<div class="alert alert-danger"
+                                    role="alert">A dataset with this name already exists on the system</div>'''
+        elif 'xls' not in request.files:
             upload_outcome = '''<div class="alert alert-danger"
                                     role="alert">The system was unable to import your data</div>'''
         else:
-            file = request.files['file']
+            file = request.files['xls']
             if file.filename == '':
                 upload_outcome = '''<div class="alert alert-danger"
-                                    role="alert">The system was unable to import your data</div>'''
+                                    role="alert">The system was unable to import your data -1ßß</div>'''
             else:
                 filename = secure_filename(file.filename)
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
                 upload_outcome = '''<div class="alert alert-success"
                                         role="alert">Data import was successful</div>'''
-                dataset_id = database.import_excel() #  TODO: save
-                ethereum.log_user_registration(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True), new_user.get_id())
+                dataset_id = database.import_excel(os.path.join(app.config['UPLOAD_FOLDER'], filename), request.form["dataset_name"])
+                ethereum.log_dataset_import(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True), dataset_id)
+                os.unlink(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         
 
     admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
     replace_list = {
         "#Name": admin.name + " " + admin.surname
     }
-    with open("static-assets/user_registration.html") as f:
+    with open("static-assets/import-xls.html") as f:
         html = f.read()
         for search, replace in replace_list.items():
             html = html.replace(search, replace)

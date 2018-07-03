@@ -216,3 +216,7 @@ class DB:
     def change_user_salt(self, userid, salt):
         self.cursor.execute("UPDATE Users SET Salt = %s WHERE ID = %s", (salt, userid))
         self.mariadb_connection.commit()
+
+    def check_dataset_exsistence(self, dataset):
+        self.cursor.execute("SELECT * FROM Datasets WHERE Name = %s;", (dataset,))
+        return len(self.cursor.fetchall()) == 1
