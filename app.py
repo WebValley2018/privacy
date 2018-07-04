@@ -353,63 +353,125 @@ def adminLoginPage():
         return resp
 
 @app.route("/edit-table/<dataset>")
-def editableTable(dataset):
-    user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token")))
-    ds = database.get_dataset(dataset, user.get_trust_level())
-    columns = '<th scope="col"></th>'
-    for c in ds["columns"]:
-        columns += '''<th scope="col">''' + c["title"] + '''</th>'''
-    data = ''
-    for idx, r in enumerate(ds["data"]):
-        data += f'<tr><td class="filterable-cell"><a href="/edit-table/edit-row/{dataset}/{idx}"><i class="far fa-edit"></i></a></td>'
-        for c in r:
-            data += '''<td class="filterable-cell">''' + str(c) + "</td>"
-        data += '</tr>'
-    replace_list = {
-        "#Name": user.name + " " + user.surname,
-        "#TableName": database.get_dataset_name(dataset, user.get_trust_level()).decode('utf-8'),
-        "{{columns}}": columns,
-        "{{content}}": data
+def editTable(dataset):
+    if database.check_token(request.cookies.get("tovel_token")):
+        user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token")))
+        ds = database.get_dataset(dataset, user.get_trust_level(), True)
+        columns = '<th scope="col"></th><th scope="col"></th>'
+        for c in ds["columns"][1:]:
+            columns += '''<th scope="col">''' + c["title"] + '''</th>'''
+        data = ''
+        for idx, r in enumerate(ds["data"]):
+            data += f'<tr><td class="filterable-cell"><a href="/edit-table/edit-row/{dataset}/{str(r[0])}/{idx}"><i class="far fa-edit"></i></a></td>'
+            data += f'<td class="filterable-cell"><a href="/edit-table/delete-row/{dataset}/{str(r[0])}"><i class="far fa-trash-alt"></i></a></td>'
+            for c in r[1:]:
+                data += '''<td class="filterable-cell">''' + str(c) + "</td>"
+            data += '</tr>'
+        changebutton = f'<a href="/edit-table/new-row/{dataset}" class="nav-link btn btn-primary">New Record</a>'
+        replace_list = {
+            "#Name": user.name + " " + user.surname,
+            "#TableName": database.get_dataset_name(dataset, user.get_trust_level()).decode('utf-8'),
+            "{{columns}}": columns,
+            "{{content}}": data,
+            "{{changebutton}}": changebutton
 
-    }
-    with open("static-assets/edit_table.html") as f:
-        html = f.read()
-        for search, replace in replace_list.items():
-            html = html.replace(search, replace)
-        return html
+        }
+        with open("static-assets/edit_table.html") as f:
+            html = f.read()
+            for search, replace in replace_list.items():
+                html = html.replace(search, replace)
+            return html
+    else:
+        resp = make_response(redirect("/"))
+        return resp  # Redirect to the /
 
-@app.route("/edit-table/edit-row/<dataset>/<row>", methods=["GET", "POST"])
-def editRow(dataset, row):
-    user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token")))
-    ds = database.get_dataset_row(dataset, int(row), user.get_trust_level())
-    l = ds["columns"]
-    r = ds["data"]
-    data = ''
-    for c, lb in zip(r, l):
-        data += '<div class="form-group">'
-        data += '''<label for="exampleFormControlInput1">''' + str(lb) + '''</label>'''
-        data += f'''<input type="string" class="form-control" name="{str(lb)}" value="{str(c)}"">'''
-        data += '</div>'
+@app.route("/edit-table/edit-row/<dataset>/<row_id>/<row>", methods=["GET", "POST"])
+def editRow(dataset, row_id, row):
+    if database.check_token(request.cookies.get("tovel_token")):
+        user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token")))
+        ds = database.get_dataset_row(dataset, row_id, user.get_trust_level())
+        l = ds["columns"]
+        r = ds["data"]
+        data = ''
+        for c, lb in zip(r, l):
+            data += '<div class="form-group">'
+            data += '''<label for="exampleFormControlInput1">''' + str(lb) + '''</label>'''
+            data += f'''<input type="string" class="form-control" name="{str(lb)}" value="{str(c)}"">'''
+            data += '</div>'
 
-    if request.method == "POST":
-        new_values = []
-        [new_values.append(request.form[str(c)]) for c in l]
-        # print(new_values)
-        database.modify_row(dataset, new_values, row, user.get_trust_level())
-        return redirect(f"/edit-table/edit-row/{dataset}/{row}")
+        if request.method == "POST":
+            new_values = []
+            [new_values.append(request.form[str(c)]) for c in l]
+            # print(new_values)
+            database.modify_row(dataset, new_values, row_id, user.get_trust_level())
+            ethereum.log_record_edit(user=user.id, dataset=dataset, record=row_id)
+            return redirect(f"/edit-table/edit-row/{dataset}/{row_id}/{row}")
 
-    replace_list = {
-        "#Name": user.name + " " + user.surname,
-        "#TableName": database.get_dataset_name(dataset, user.get_trust_level()).decode('utf-8'),
-        "#RowNumber": str(int(row) + 1),
-        "#datasetid": dataset,
-        "{{content}}": data
-    }
-    with open("static-assets/edit_row.html") as f:
-        html = f.read()
-        for search, replace in replace_list.items():
-            html = html.replace(search, replace)
-        return html
+        replace_list = {
+            "#Name": user.name + " " + user.surname,
+            "#TableName": database.get_dataset_name(dataset, user.get_trust_level()).decode('utf-8'),
+            "#RowNumber": row,
+            "#datasetid": dataset,
+            "{{content}}": data
+        }
+        with open("static-assets/edit_row.html") as f:
+            html = f.read()
+            for search, replace in replace_list.items():
+                html = html.replace(search, replace)
+            return html
+    else:
+        resp = make_response(redirect("/"))
+        return resp  # Redirect to the /
+
+@app.route("/edit-table/delete-row/<dataset>/<row_id>")
+def deleteRow(dataset, row_id):
+    if database.check_token(request.cookies.get("tovel_token")):
+        user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token")))
+        database.delete_row(dataset, row_id, user.get_trust_level())
+        resp = make_response(redirect(f"/edit-table/{dataset}"))
+        ethereum.log_record_delete(user=user.id, dataset=dataset, record=row_id)
+        return resp  # Redirect to the /
+    else:
+        resp = make_response(redirect("/"))
+        return resp  # Redirect to the /
+
+@app.route("/edit-table/new-row/<dataset>", methods=["GET", "POST"])
+def newRow(dataset):
+    if database.check_token(request.cookies.get("tovel_token")):
+        user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token")))
+        ds = database.get_dataset_columns(dataset, user.get_trust_level())
+        l = ds["columns"]
+        data = ''
+        for lb in l:
+            data += '<div class="form-group">'
+            data += '''<label for="exampleFormControlInput1">''' + str(lb) + '''</label>'''
+            data += f'''<input type="string" class="form-control" name="{str(lb)}"">'''
+            data += '</div>'
+
+        if request.method == "POST":
+            new_values = []
+            [new_values.append(request.form[str(c)]) for c in l]
+            # print(new_values)
+            # database.modify_row(dataset, new_values, row_id, user.get_trust_level())
+            #ethereum.log_record_add(user=user.id, dataset=dataset, record=row_id)
+            return redirect(f"/edit-table/{dataset}")
+
+        replace_list = {
+            "#Name": user.name + " " + user.surname,
+            "#TableName": database.get_dataset_name(dataset, user.get_trust_level()).decode('utf-8'),
+            "#datasetid": dataset,
+            "{{content}}": data
+        }
+        with open("static-assets/new_row.html") as f:
+            html = f.read()
+            for search, replace in replace_list.items():
+                html = html.replace(search, replace)
+            return html
+    else:
+        resp = make_response(redirect("/"))
+        return resp  # Redirect to the /
+
+
 
 @app.route("/choose-table")
 def chooseTable():
@@ -419,7 +481,6 @@ def chooseTable():
         datasets = database.get_datasets(user.trust_level)
         buttons = ''
         for d in datasets:
-            print(d)
             buttons += f'''<a class="btn btn-primary btn-lg btn-block" href="/edit-table/{d["id"]}" role="button">{d['name']}</a>'''
         replace_list = {
             "#Name":  user.name + " " + user.surname,
@@ -433,6 +494,7 @@ def chooseTable():
     else:
         resp = make_response(redirect("/"))
         return resp  # Redirect to the /
+
 
 app.run(host='0.0.0.0', debug=True)  # to do: remove debug True in production
 

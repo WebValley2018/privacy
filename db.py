@@ -228,16 +228,16 @@ class DB:
         res = self.cursor.fetchall()
         return len(res) == 1
     
-    def get_dataset(self, dataset_id, trust_level):
+    def get_dataset(self, dataset_id, trust_level, return_row_id=False):
         if not self._can_load_ds(dataset_id, trust_level):
             return None
         self.cursor.execute("SELECT Name, RequiredTrust FROM Datasets WHERE ID = %s",(dataset_id,))
         dataset_name, trust = self.cursor.fetchall()[0]
         self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
         #print(self.cursor.fetchall())
-        colonne = [{"title": row[3]} for row in self.cursor.fetchall()[1:]]
+        colonne = [{"title": row[3]} for row in (self.cursor.fetchall() if return_row_id else self.cursor.fetchall()[1:])]
         self.cursor.execute("SELECT * FROM `"+str(dataset_name.decode('utf-8'))+"`;")
-        return {"data": [[(str(j.decode("utf-8")) if type(j) is bytes else j) for j in [n for n in list(r)[1:]]] for r in list(self.cursor)], "columns": colonne}
+        return {"data": [[(str(j.decode("utf-8")) if type(j) is bytes else j) for j in [n for n in (list(r) if return_row_id else list(r)[1:])]] for r in list(self.cursor)], "columns": colonne}
     
     def get_datasets(self, trust_level):
         self.cursor.execute("SELECT Name, ID FROM Datasets WHERE RequiredTrust <= %s", (trust_level,))
@@ -257,8 +257,18 @@ class DB:
         self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
         #print(self.cursor.fetchall())
         colonne = [row[3] for row in self.cursor.fetchall()[1:]]
-        self.cursor.execute("SELECT * FROM `"+str(dataset_name.decode('utf-8'))+"` LIMIT %s,1;", (row,))
-        return {"data": [str(v.decode("utf-8")) if type(v) is bytes else v for v in self.cursor.fetchall()[0][1:]], "columns": colonne}
+        self.cursor.execute("SELECT * FROM `"+str(dataset_name.decode('utf-8'))+"` WHERE _row_id = %s;", (row,))
+        res=self.cursor.fetchall()
+        return {"data": [str(v.decode("utf-8")) if type(v) is bytes else v for v in res[0][1:]], "columns": colonne}
+
+    def get_dataset_columns(self, dataset_id, trust_level):
+        if not self._can_load_ds(dataset_id, trust_level):
+            return None
+        self.cursor.execute("SELECT Name FROM Datasets WHERE ID = %s",(dataset_id,))
+        dataset_name = self.cursor.fetchall()[0][0]
+        self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
+        colonne = [row[3] for row in self.cursor.fetchall()[1:]]
+        return {"columns": colonne}
 
     def modify_row(self, dataset_id, data, row, trust_level):
         if not self._can_load_ds(dataset_id, trust_level):
@@ -267,13 +277,32 @@ class DB:
         dataset_name = self.cursor.fetchall()[0][0]
         self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
         new_data = []
-        [new_data.append(d.decode('utf-8') if type(d) is bytes else d) for d in data]
+        for d in data:
+            new_data.append(d.decode('utf-8') if type(d) == bytes else d)
         if type(dataset_name) is bytes:
             dataset_name = dataset_name.decode('utf-8')
         colonne = [row[3] for row in self.cursor.fetchall()[1:]]
         for idx, c in enumerate(colonne):
-            print("UPDATE " + dataset_name + " SET " + c + " = %s WHERE _row_id = %s")
-            # self.cursor.execute("UPDATE " + dataset_name + " SET " + c + " = %s WHERE _row_id = %s", (str(data[idx]), str(row),))
-            #self.cursor.execute("UPDATE " + str(dataset_name) + " SET " + str(c) + "=%s WHERE _row_id = %s", (str(data[idx]), str(row),))
+            self.cursor.execute("UPDATE `" + str(dataset_name) + "` SET `" + c + "`=%s WHERE _row_id = %s", (str(new_data[idx]), str(row),))
+            self.mariadb_connection.commit()
+
+    def delete_row(self, dataset_id, row, trust_level):
+        if not self._can_load_ds(dataset_id, trust_level):
+            return None
+        self.cursor.execute("SELECT Name FROM Datasets WHERE ID = %s", (dataset_id,))
+        dataset_name = self.cursor.fetchall()[0][0]
+        if type(dataset_name) is bytes:
+            dataset_name = dataset_name.decode('utf-8')
+        self.cursor.execute(f"DELETE FROM `{dataset_name}` WHERE _row_id = %s", (row,))
+        self.mariadb_connection.commit()
+
+    def new_row(self, dataset_id, data, columns, trust_level):
+        if not self._can_load_ds(dataset_id, trust_level):
+            return None
+        self.cursor.execute("SELECT Name FROM Datasets WHERE ID = %s", (dataset_id,))
+        dataset_name = self.cursor.fetchall()[0][0]
+        if type(dataset_name) is bytes:
+            dataset_name = dataset_name.decode('utf-8')
+        self.cursor.execute(f"DELETE FROM `{dataset_name}` WHERE _row_id = %s", (row,))
         self.mariadb_connection.commit()
 
