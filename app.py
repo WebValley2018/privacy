@@ -367,7 +367,7 @@ def editTable(dataset):
             for c in r[1:]:
                 data += '''<td class="filterable-cell">''' + str(c) + "</td>"
             data += '</tr>'
-        changebutton = f'<a href="/edit-table/new-row/{dataset}" class="nav-link btn btn-primary">New Record</a>'
+        changebutton = f'<a href="/edit-table/new-row/{dataset}" class="m-3 btn btn-primary">New Record</a>'
         replace_list = {
             "#Name": user.name + " " + user.surname,
             "#TableName": database.get_dataset_name(dataset, user.get_trust_level()).decode('utf-8'),
@@ -451,8 +451,9 @@ def newRow(dataset):
         if request.method == "POST":
             new_values = []
             [new_values.append(request.form[str(c)]) for c in l]
-            # print(new_values)
-            # database.modify_row(dataset, new_values, row_id, user.get_trust_level())
+
+            #database.delete_row()
+            database.new_row(dataset, tuple(new_values), user.get_trust_level())
             #ethereum.log_record_add(user=user.id, dataset=dataset, record=row_id)
             return redirect(f"/edit-table/{dataset}")
 

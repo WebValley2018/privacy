@@ -296,13 +296,20 @@ class DB:
         self.cursor.execute(f"DELETE FROM `{dataset_name}` WHERE _row_id = %s", (row,))
         self.mariadb_connection.commit()
 
-    def new_row(self, dataset_id, data, columns, trust_level):
+    def new_row(self, dataset_id, data, trust_level):
         if not self._can_load_ds(dataset_id, trust_level):
             return None
         self.cursor.execute("SELECT Name FROM Datasets WHERE ID = %s", (dataset_id,))
         dataset_name = self.cursor.fetchall()[0][0]
         if type(dataset_name) is bytes:
             dataset_name = dataset_name.decode('utf-8')
-        self.cursor.execute(f"DELETE FROM `{dataset_name}` WHERE _row_id = %s", (row,))
+        val = '%s, '
+        for i in range(len(data)):
+            val += '%s'
+            if not i == len(data) - 1:
+                val += ','
+        new_row_id = str(uuid4())
+        print(f"INSERT INTO `{dataset_name}` VALUES ({val});", (new_row_id, ) + data)
+        self.cursor.execute(f"INSERT INTO `{dataset_name}` VALUES ({val}) ;", (new_row_id, ) + data)
         self.mariadb_connection.commit()
 
