@@ -311,5 +311,63 @@ def adminLoginPage():
         resp = make_response(redirect("/admin?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
 
+@app.route("/admin/edit-table/<dataset>")
+def editableTable(dataset):
+    # admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
+    ds = database.get_dataset(dataset)
+    columns = '<th scope="col"></th>'
+    for c in ds["columns"]:
+        columns += '''<th scope="col">''' + c + '''</th>'''
+    data = ''
+    for idx, r in enumerate(ds["data"]):
+        data += f'<tr><td class="filterable-cell"><a href="/admin/edit-table/edit-row/{dataset}/{idx}"><i class="far fa-edit"></i></a></td>'
+        for c in r:
+            data += '''<td class="filterable-cell">''' + str(c) + "</td>"
+        data += '</tr>'
+
+    replace_list = {
+        # "#Name": admin.name + " " + admin.surname
+        "#TableName": database.get_dataset_name(dataset).decode('utf-8'),
+        "{{columns}}": columns,
+        "{{content}}": data
+
+    }
+    with open("static-assets/edit_table.html") as f:
+        html = f.read()
+        for search, replace in replace_list.items():
+            html = html.replace(search, replace)
+        return html
+
+@app.route("/admin/edit-table/edit-row/<dataset>/<row>", methods=["GET", "POST"])
+def editRow(dataset, row):
+    # admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
+    ds = database.get_dataset_row(dataset, int(row))
+    l = ds["columns"]
+    r = ds["data"]
+    data = ''
+    for idx, c in enumerate(r):
+        data += '<div class="form-group">'
+        data += '''<label for="exampleFormControlInput1">''' + str(l[idx]) + '''</label>'''
+        data += f'''<input type="string" class="form-control" name="{str(l[idx])}" value="{str(c)}"">'''
+        data += '</div>'
+
+    if request.method == "POST":
+        new_values = []
+        [new_values.append(request.form[str(c)]) for c in l]
+        #database.modify_row(dataset, new_values, row)
+        return redirect(f"/admin/edit-table/edit-row/{dataset}/{row}")
+
+    replace_list = {
+        # "#Name": admin.name + " " + admin.surname
+        "#TableName": database.get_dataset_name(dataset).decode('utf-8'),
+        "#RowNumber": str(int(row) + 1),
+        "#datasetid": dataset,
+        "{{content}}": data
+    }
+    with open("static-assets/edit_row.html") as f:
+        html = f.read()
+        for search, replace in replace_list.items():
+            html = html.replace(search, replace)
+        return html
 
 app.run(host='0.0.0.0', debug=True)  # to do: remove the Bug True in production
