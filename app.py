@@ -149,9 +149,10 @@ def loginPage():
 @app.route("/get-dataset/<format>/<dataset_id>")
 def get_dataset(format, dataset_id):
     if database.check_token(request.cookies.get("tovel_token")):
+        user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token")))
         if format == 'json':
             ethereum.log_data_access(database.get_userid_from_token(request.cookies.get("tovel_token"), False), dataset_id)
-            return dumps(database.get_dataset(dataset_id))
+            return dumps(database.get_dataset(dataset_id, user.get_trust_level()))
     else:
         return "{\"error\": \"Session expired\"}"
 
@@ -161,7 +162,7 @@ def query():
         # If the user is logged in, let's display his personal page
         user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token"), False))
         buttons = ""
-        for dataset in database.get_datasets():
+        for dataset in database.get_datasets(user.get_trust_level()):
             buttons = buttons + f"<button type=\"button\" class=\"btn btn-primary btn-lg btn-block\" onclick=\"loadDS('{dataset['id']}');\">{dataset['name']}</button>\n"
         replace_list = {
             "#Name" :  user.name + " " + user.surname,
@@ -302,7 +303,7 @@ def import_excel():
 
                 upload_outcome = '''<div class="alert alert-success"
                                         role="alert">Data import was successful</div>'''
-                dataset_id = database.import_excel(os.path.join(app.config['UPLOAD_FOLDER'], filename), request.form["dataset_name"])
+                dataset_id = database.import_excel(os.path.join(app.config['UPLOAD_FOLDER'], filename), request.form["dataset_name"], int(request.form["trustlevel"]))
                 ethereum.log_dataset_import(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True), dataset_id)
                 os.unlink(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         
@@ -346,7 +347,8 @@ def adminLoginPage():
 @app.route("/admin/edit-table/<dataset>")
 def editableTable(dataset):
     # admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
-    ds = database.get_dataset(dataset)
+    user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token")))
+    ds = database.get_dataset(dataset, user.get_trust_level())
     columns = '<th scope="col"></th>'
     for c in ds["columns"]:
         columns += '''<th scope="col">''' + c["title"] + '''</th>'''
@@ -358,7 +360,7 @@ def editableTable(dataset):
         data += '</tr>'
     replace_list = {
         # "#Name": admin.name + " " + admin.surname
-        "#TableName": database.get_dataset_name(dataset).decode('utf-8'),
+        "#TableName": database.get_dataset_name(dataset, user.get_trust_level()).decode('utf-8'),
         "{{columns}}": columns,
         "{{content}}": data
 
@@ -372,7 +374,8 @@ def editableTable(dataset):
 @app.route("/admin/edit-table/edit-row/<dataset>/<row>", methods=["GET", "POST"])
 def editRow(dataset, row):
     # admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
-    ds = database.get_dataset_row(dataset, int(row))
+    user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token")))
+    ds = database.get_dataset_row(dataset, int(row), user.get_trust_level())
     l = ds["columns"]
     r = ds["data"]
     data = ''
@@ -386,12 +389,12 @@ def editRow(dataset, row):
         new_values = []
         [new_values.append(request.form[str(c)]) for c in l]
         # print(new_values)
-        database.modify_row(dataset, new_values, row)
+        database.modify_row(dataset, new_values, row, user.get_trust_level())
         return redirect(f"/admin/edit-table/edit-row/{dataset}/{row}")
 
     replace_list = {
         # "#Name": admin.name + " " + admin.surname
-        "#TableName": database.get_dataset_name(dataset).decode('utf-8'),
+        "#TableName": database.get_dataset_name(dataset, user.get_trust_level()).decode('utf-8'),
         "#RowNumber": str(int(row) + 1),
         "#datasetid": dataset,
         "{{content}}": data
