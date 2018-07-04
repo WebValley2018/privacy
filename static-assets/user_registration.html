@@ -21,7 +21,10 @@
         <div><label>Username:<br><input type="text" name="username"></label></div>
         <div><label>Mail:<br><input type="email" name="mail"></label></div>
         <div><label>Organization:<br><input type="text" name="organization"></label></div>
-        <div><label><input type="checkbox" name="trusted"> Trusted researcher</label></div>
+        <h6>Level of trust</h6>
+        <div><label><input type="radio" value="0" name="trustlevel" checked> Untrusted researcher (read access to public tables)</label></div>
+        <div><label><input type="radio" value="1" name="trustlevel"> Trusted researcher (read access and download of selected tables)</label></div>
+        <div><label><input type="radio" value="2" name="trustlevel"> Doctor (read and write access to all tables)</label></div>
         <input type="submit" value="Add user" class="btn btn-primary">
     </form>
 </body>

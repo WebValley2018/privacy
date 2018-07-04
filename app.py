@@ -227,9 +227,9 @@ def register_user():
         username = request.form["username"]
         organization = request.form["organization"]
         mail = request.form["mail"]
-        trusted = True if "trusted" in request.form else False
+        trustlevel = int(request.form["trustlevel"])
         new_user_password = utilities.generate_password()
-        new_user = User(username=username, name=name, surname=surname, organization=organization, mail=mail, trust=trusted, pw=new_user_password)
+        new_user = User(username=username, name=name, surname=surname, organization=organization, mail=mail, trust=trustlevel==1, doctor=trustlevel==2 pw=new_user_password)
         if database.register_user(new_user):
             ethereum.set_user_hash(new_user.get_id(), new_user.h_pw)
             registration_outcome = '''<div class="alert alert-success"
