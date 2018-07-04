@@ -231,8 +231,8 @@ class DB:
     def get_dataset(self, dataset_id, trust_level, return_row_id=False):
         if not self._can_load_ds(dataset_id, trust_level):
             return None
-        self.cursor.execute("SELECT Name, RequiredTrust FROM Datasets WHERE ID = %s",(dataset_id,))
-        dataset_name, trust = self.cursor.fetchall()[0]
+        self.cursor.execute("SELECT Name FROM Datasets WHERE ID = %s",(dataset_id,))
+        dataset_name = self.cursor.fetchall()[0]
         self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
         #print(self.cursor.fetchall())
         colonne = [{"title": row[3]} for row in (self.cursor.fetchall() if return_row_id else self.cursor.fetchall()[1:])]
