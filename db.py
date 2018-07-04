@@ -186,13 +186,13 @@ class DB:
         for e in a:
             yield from (e, self.python_type_to_sql(d[e]))
     
-    def import_excel(self, fn, dataset_name):
+    def import_excel(self, fn, dataset_name, trust_level=2):
         file = Excel(fn)
         dataset_id = str(uuid4())
         #  Add table based on Excel file columns
         columns = file.get_columns()
         columns_data_type={c: file.get_data_type(i) for i, c in enumerate(columns)}
-        self.cursor.execute("INSERT INTO Datasets VALUES (%s, %s)", (dataset_name, dataset_id))
+        self.cursor.execute("INSERT INTO Datasets VALUES (%s, %s, %s)", (dataset_name, dataset_id, str(trust_level)))
         #  TODO: Sanitize the query
         query = f'''CREATE TABLE `{dataset_name}` (_row_id TEXT, {', '.join(f'`{c if c else "column_"+str(i)}` {self.python_type_to_sql(columns_data_type[c])}' for i,c in enumerate(columns))});'''
         self.cursor.execute(query)
@@ -219,28 +219,40 @@ class DB:
         self.cursor.execute("UPDATE Users SET Salt = %s WHERE ID = %s", (salt, userid))
         self.mariadb_connection.commit()
 
-    def check_dataset_exsistence(self, dataset):
+    def _can_load_ds(self, dataset, tl):
+        self.cursor.execute("SELECT RequiredTrust FROM Datasets WHERE ID = %s", (dataset, ))
+        return int(self.cursor.fetchall()[0][0])<=tl
+
+    def check_dataset_exsistence(self, dataset, trust_level):
+        if not self._can_load_ds(dataset, trust_level):
+            return None
         self.cursor.execute("SELECT * FROM Datasets WHERE Name = %s;", (dataset,))
         return len(self.cursor.fetchall()) == 1
     
-    def get_dataset(self, dataset_id):
-        self.cursor.execute("SELECT Name FROM Datasets WHERE ID = %s",(dataset_id,))
-        dataset_name = self.cursor.fetchall()[0][0]
+    def get_dataset(self, dataset_id, trust_level):
+        if not self._can_load_ds(dataset_id, trust_level):
+            return None
+        self.cursor.execute("SELECT Name, RequiredTrust FROM Datasets WHERE ID = %s",(dataset_id,))
+        dataset_name, trust = self.cursor.fetchall()[0]
         self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
         #print(self.cursor.fetchall())
         colonne = [{"title": row[3]} for row in self.cursor.fetchall()[1:]]
         self.cursor.execute("SELECT * FROM `"+str(dataset_name.decode('utf-8'))+"`;")
         return {"data": [[str(j.decode("utf-8")) if type(j) is bytes else j for j in list(r)[1:]] for r in list(self.cursor)[1:]], "columns": colonne}
     
-    def get_datasets(self):
-        self.cursor.execute("SELECT Name, ID FROM Datasets")
+    def get_datasets(self, trust_level):
+        self.cursor.execute("SELECT Name, ID FROM Datasets WHERE RequiredTrust <= %s", (trust_level,))
         return [{"name":e[0].decode("utf-8"), "id": e[1].decode("utf-8")} for e in self.cursor.fetchall()]
 
-    def get_dataset_name(self, dataset_id):
+    def get_dataset_name(self, dataset_id, trust_level):
+        if not self._can_load_ds(dataset_id, trust_level):
+            return None
         self.cursor.execute("SELECT Name FROM Datasets WHERE ID = %s", (dataset_id,))
         return self.cursor.fetchall()[0][0]
 
-    def get_dataset_row(self, dataset_id, row):
+    def get_dataset_row(self, dataset_id, row, trust_level):
+        if not self._can_load_ds(dataset_id, trust_level):
+            return None
         self.cursor.execute("SELECT Name FROM Datasets WHERE ID = %s",(dataset_id,))
         dataset_name = self.cursor.fetchall()[0][0]
         self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
@@ -249,7 +261,9 @@ class DB:
         self.cursor.execute("SELECT * FROM `"+str(dataset_name.decode('utf-8'))+"` LIMIT %s,1;", (row,))
         return {"data": [str(v.decode("utf-8")) if type(v) is bytes else v for v in self.cursor.fetchall()[0][1:]], "columns": colonne}
 
-    def modify_row(self, dataset_id, data, row):
+    def modify_row(self, dataset_id, data, row, trust_level):
+        if not self._can_load_ds(dataset_id, trust_level):
+            return None
         self.cursor.execute("SELECT Name FROM Datasets WHERE ID = %s", (dataset_id,))
         dataset_name = self.cursor.fetchall()[0][0]
         self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
