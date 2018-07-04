@@ -31,4 +31,8 @@ You can access the site at this link: https://webvalley2018.github.io/privacy/
 * `web3`
 * `pyotp`
 * `py-solc`
+* `qrcode`
+* `pyexcel`
+* `pyexcel-xls`
+* `pyexcel-xlsx`
 

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Import Excel file</title>
+    <link rel="stylesheet" href="/static/css/bootstrap.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mr-auto">
+        <a href="/admin" class="nav-link btn btn-primary my-2 my-sm-0 mr-2"><span class="badge badge-light">&#9666;</span> Back</a>
+        <span class="navbar-brand">Import from Excel</span> <span class="nav-link disabled">#Name</span>
+        <a href="/admin/logout" class="nav-link btn btn-outline-info my-2 my-sm-0 ml-auto">Logout</a>
+    </nav>
+    <form method="POST" action="/admin/import-xls" class="jumbotron container" enctype="multipart/form-data">
+        <h1>Tovel - Import from Excel</h1>
+        {{outcome}}
+        <div class="form-group"><input class="form-control" type="text" name="dataset_name" placeholder="Dataset name"></div>
+        <div class="form-group">Upload an Excel file<input class="form-control" type="file" name="xls"></label></div>
+        <h6>Who will be able to access the dataset?</h6>
+        <div><label><input type="radio" value="0" name="trustlevel"> Untrusted researchers</label></div>
+        <div><label><input type="radio" value="1" name="trustlevel"> Trusted researchers</label></div>
+        <div><label><input type="radio" value="2" name="trustlevel" checked> Doctors</label></div>
+        <input type="submit" id="submit" value="Upload" class="btn btn-primary">
+    </form>
+</body>
+</html>
