@@ -84,7 +84,7 @@ def changePassword():
         "#Name": user.name + " " + user.surname,
         "{{outcome}}": '',
         "{{security}}": "3" if "tovel_token" in request.cookies else "4",
-        "{{admin}}": ''
+        "{{admin}}": '' if not "tovel_token_admin" in request.cookies else "admin"
     }
 
     if request.method == "POST":
@@ -107,7 +107,6 @@ def changePassword():
                                     role="alert">Please check your old password</div>'''
 
         elif "tovel_token_admin" in request.cookies:
-            replace_list["{{admin}}"] = "admin"
             #  Procedure for the admins
             if database.change_admin_pwd(user, request.form["old_password"], request.form["password"]):
                 replace_list["{{outcome}}"] = '''<div class="alert alert-success"
