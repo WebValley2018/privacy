@@ -170,7 +170,7 @@ class DB:
             "int": "INTEGER",
             "float": "DOUBLE",
             "str": "TEXT",
-            "datetime.date": "INT"
+            "datetime.date": "TEXT"
         }
         return types[t]
     
@@ -180,7 +180,7 @@ class DB:
             "int": lambda x: int(x) if x else None,
             "float": float,
             "str": str,
-            "datetime.date": lambda x: x.strftime('%s')
+            "datetime.date": str#lambda x: x.strftime('%s')
         }
         return variable if variable == '' else str(functions[typestring](variable))
     
