@@ -166,7 +166,8 @@ def query():
             buttons = buttons + f"<button type=\"button\" class=\"btn btn-primary btn-lg btn-block\" onclick=\"loadDS('{dataset['id']}');\">{dataset['name']}</button>\n"
         replace_list = {
             "#Name" :  user.name + " " + user.surname,
-            "#btns": buttons
+            "#btns": buttons,
+            "#trusted": "dati['dom']='Bfrtip';dati['buttons']= ['excel'];" if user.trust_level>0 else ''
         }
         with open("static-assets/query.html") as f:
             html = f.read()

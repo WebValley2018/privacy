@@ -1,7 +1,9 @@
 from collections import namedtuple
 from time import localtime, time
+import datetime
 from uuid import uuid4
 import hashlib
+import string
 from admin import Admin
 import json
 
@@ -180,12 +182,16 @@ class DB:
             "str": str,
             "datetime.date": lambda x: x.strftime('%s')
         }
-        return str(functions[typestring](variable))
+        return variable if variable == '' else str(functions[typestring](variable))
     
     def _get_parameters_generate_table(self, a, d):
         for e in a:
             yield from (e, self.python_type_to_sql(d[e]))
     
+    def _sanitize_col_name(self, col):
+        col = col.title()
+        return ''.join(['' if not(c in [str(n) for n in range(10)] or c in string.ascii_letters or c in ["_"]) else c for c in col])
+
     def import_excel(self, fn, dataset_name, trust_level=2):
         file = Excel(fn)
         dataset_id = str(uuid4())
@@ -194,7 +200,7 @@ class DB:
         columns_data_type={c: file.get_data_type(i) for i, c in enumerate(columns)}
         self.cursor.execute("INSERT INTO Datasets VALUES (%s, %s, %s)", (dataset_name, dataset_id, str(trust_level)))
         #  TODO: Sanitize the query
-        query = f'''CREATE TABLE `{dataset_name}` (_row_id TEXT, {', '.join(f'`{c if c else "column_"+str(i)}` {self.python_type_to_sql(columns_data_type[c])}' for i,c in enumerate(columns))});'''
+        query = f'''CREATE TABLE `{dataset_name}` (_row_id TEXT, {', '.join(f'`{self._sanitize_col_name(c) if c else "column_"+str(i)}` {self.python_type_to_sql(columns_data_type[c])}' for i,c in enumerate(columns))});'''
         self.cursor.execute(query)
         self.mariadb_connection.commit()
         data = file.get_data()

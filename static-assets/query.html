@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Tovel - Query datas</title>
+    <title>Tovel - Query data</title>
     <link rel="stylesheet" href="/static/css/bootstrap.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
     <script type="text/javascript" src="/static/js/jquery.js"></script>
     <link rel="stylesheet" type="text/css" href="/static/DataTables/datatables.min.css"/>
@@ -23,7 +23,13 @@
     function loadDS(id){
         getUrlPromise("/get-dataset/json/"+id).then(function(r){
             $('#tb_wrp')[0].innerHTML='<table id="qry_result"></table>'
-            table = $('#qry_result').DataTable(JSON.parse(r));
+            var dati = JSON.parse(r);
+            dati["fixedHeader"]={
+                "header": true,
+                "footer": true
+            }
+            #trusted
+            table = $('#qry_result').DataTable(dati);
         });
     }
     </script>
