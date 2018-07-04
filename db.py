@@ -154,6 +154,7 @@ class DB:
 
     def register_admin_token(self, token):  # register new token in the db
         self.cursor.execute("INSERT INTO AdminToken VALUES (%s, %s, %s, %s);", (token.token_value, token.ttl, token.creation_date, token.user))
+        self.mariadb_connection.commit()
     
     def save_audit_transaction(self, id):
         self.cursor.execute("INSERT INTO Audit VALUES (%s, %s)", (id,str(int(time()))))
