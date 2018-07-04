@@ -348,7 +348,7 @@ def editableTable(dataset):
     ds = database.get_dataset(dataset)
     columns = '<th scope="col"></th>'
     for c in ds["columns"]:
-        columns += '''<th scope="col">''' + c + '''</th>'''
+        columns += '''<th scope="col">''' + c["title"] + '''</th>'''
     data = ''
     for idx, r in enumerate(ds["data"]):
         data += f'<tr><td class="filterable-cell"><a href="/admin/edit-table/edit-row/{dataset}/{idx}"><i class="far fa-edit"></i></a></td>'
@@ -375,16 +375,17 @@ def editRow(dataset, row):
     l = ds["columns"]
     r = ds["data"]
     data = ''
-    for idx, c in enumerate(r):
+    for c, lb in zip(r, l):
         data += '<div class="form-group">'
-        data += '''<label for="exampleFormControlInput1">''' + str(l[idx]) + '''</label>'''
-        data += f'''<input type="string" class="form-control" name="{str(l[idx])}" value="{str(c)}"">'''
+        data += '''<label for="exampleFormControlInput1">''' + str(lb) + '''</label>'''
+        data += f'''<input type="string" class="form-control" name="{str(lb)}" value="{str(c)}"">'''
         data += '</div>'
 
     if request.method == "POST":
         new_values = []
         [new_values.append(request.form[str(c)]) for c in l]
-        #database.modify_row(dataset, new_values, row)
+        # print(new_values)
+        database.modify_row(dataset, new_values, row)
         return redirect(f"/admin/edit-table/edit-row/{dataset}/{row}")
 
     replace_list = {

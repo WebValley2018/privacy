@@ -230,7 +230,7 @@ class DB:
         #print(self.cursor.fetchall())
         colonne = [{"title": row[3]} for row in self.cursor.fetchall()[1:]]
         self.cursor.execute("SELECT * FROM `"+str(dataset_name.decode('utf-8'))+"`;")
-        return {"data": [[str(j.decode("utf-8")) if type(j) is bytes else j for j in list(r)] for r in list(self.cursor)[1:]], "columns": colonne}
+        return {"data": [[str(j.decode("utf-8")) if type(j) is bytes else j for j in list(r)[1:]] for r in list(self.cursor)[1:]], "columns": colonne}
     
     def get_datasets(self):
         self.cursor.execute("SELECT Name, ID FROM Datasets")
@@ -248,14 +248,19 @@ class DB:
         #print(self.cursor.fetchall())
         colonne = [row[3] for row in self.cursor.fetchall()[1:]]
         self.cursor.execute("SELECT * FROM `"+str(dataset_name.decode('utf-8'))+"` LIMIT %s,1;", (row,))
-        return {"data": self.cursor.fetchall()[0], "columns": colonne}
+        return {"data": [str(v.decode("utf-8")) if type(v) is bytes else v for v in self.cursor.fetchall()[0][1:]], "columns": colonne}
 
     def modify_row(self, dataset_id, data, row):
         self.cursor.execute("SELECT Name FROM Datasets WHERE ID = %s", (dataset_id,))
         dataset_name = self.cursor.fetchall()[0][0]
         self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
+        new_data = []
+        [new_data.append(d.decode('utf-8') if type(d) is bytes else d) for d in data]
+        dataset_name = dataset_name.decode('utf-8') if dataset_name is bytes else dataset_name
+        print(dataset_name)
         colonne = [row[3] for row in self.cursor.fetchall()[1:]]
         for idx, c in enumerate(colonne):
-            self.cursor.execute("UPDATE " + dataset_name + " SET " + str(c) + "=%s WHERE _row_id = %s", (str(data[idx], row,)))
+            self.cursor.execute(f'''"UPDATE `{str(dataset_name)}` SET %s=%s WHERE _row_id=%s''', (c, str(data[idx]), str(row),))
+            #self.cursor.execute("UPDATE " + str(dataset_name) + " SET " + str(c) + "=%s WHERE _row_id = %s", (str(data[idx]), str(row),))
         self.mariadb_connection.commit()
 
