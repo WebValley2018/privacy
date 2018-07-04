@@ -26,9 +26,9 @@ class Transaction:
             "l": "User " + ("#userid logged in" if (self.data["status"] if "status" in self.data.keys() else '') else "failed to log in"),
             "g": "Nonexisting admin tried to login from IP address #IP",
             "n": "Existing admin #adminid " + ("logged in" if (self.data["status"] if "status" in self.data.keys() else '') else "failed to log in"),
-            "x": "User accessed the dataset '#dataset'",
-            "q": "User queried the dataset '#dataset'",
-            "p": "User changed his password",
+            "x": "User #userid accessed the dataset '#dataset'",
+            "q": "User #userid queried the dataset '#dataset'",
+            "p": "User #userid changed his password",
             "m": "record edited", #  TODO: Fix everything there
             "D": "record added",
             "t": "record deleted",
@@ -43,8 +43,11 @@ class Transaction:
                 kind = kind.replace("#adminid", admin.name + " " + admin.surname)
             else:
                 kind = kind.replace("#adminid", "")
-        if self.id[0] == "l" and "status" in self.data.keys():
+        if self.id[0] in ["l", 'x', 'q', 'p'] and "status" in self.data.keys():
             user = database.get_user_from_id(self.data["user_id"])
+            kind = kind.replace("#userid", user.name + " " + user.surname + " from " + user.organization)
+        elif self.id[0] in ["l", 'x', 'q', 'p'] and "user" in self.data.keys():
+            user = database.get_user_from_id(self.data["user"])
             kind = kind.replace("#userid", user.name + " " + user.surname + " from " + user.organization)
 
         for k, val in self.data.items():
