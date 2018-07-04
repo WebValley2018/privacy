@@ -235,7 +235,6 @@ class DB:
     def get_datasets(self):
         self.cursor.execute("SELECT Name, ID FROM Datasets")
         return [{"name":e[0].decode("utf-8"), "id": e[1].decode("utf-8")} for e in self.cursor.fetchall()]
-        return {"data": self.cursor.fetchall(), "columns": colonne}
 
     def get_dataset_name(self, dataset_id):
         self.cursor.execute("SELECT Name FROM Datasets WHERE ID = %s", (dataset_id,))
