@@ -40,9 +40,9 @@ class DB:
         self.cursor = self.mariadb_connection.cursor()
 
     def get_user_from_id(self, id):  # get user information, the user class has no pw, could raise errors
-        self.cursor.execute("SELECT Name, Surname, Username, Organization, Mail, Trusted, ID, Salt FROM Users WHERE ID=%s", (id,))
+        self.cursor.execute("SELECT Name, Surname, Username, Organization, Mail, TrustLevel, ID, Salt FROM Users WHERE ID=%s", (id,))
         for i in self.cursor:  # before passing the strings to the user class they are decoded
-            user = namedtuple('UserTuple', 'name, surname, username, organization, mail, trust, id, salt')   # construct with named tuple
+            user = namedtuple('UserTuple', 'name, surname, username, organization, mail, trust_level, id, salt')   # construct with named tuple
             new_user = User(user_data=user(i[0].decode('utf-8'), i[1].decode('utf-8'), i[2].decode('utf-8'), i[3].decode('utf-8'), i[4].decode('utf-8'), i[5], i[6].decode('utf-8'), i[7].decode('utf-8')))
             return new_user
 
@@ -99,7 +99,7 @@ class DB:
     def register_user(self, user):  # register new user in the db
         if self.check_user(user.username) or self.check_mail(user.mail):
             return False
-        self.cursor.execute("INSERT INTO Users VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", (user.username, user.name, user.surname, user.mail, user.id, user.salt, user.organization, user.trust))
+        self.cursor.execute("INSERT INTO Users VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", (user.username, user.name, user.surname, user.mail, user.id, user.salt, user.organization, user.trust_level))
         self.mariadb_connection.commit()
         return True
 

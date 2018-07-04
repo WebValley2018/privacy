@@ -3,7 +3,7 @@ import hashlib
 from time import sleep
 from collections import namedtuple
 
-namedtuple('UserTuple', 'name, surname, username, organization, mail, trust, id')  # tuple for storing the User
+namedtuple('UserTuple', 'name, surname, username, organization, mail, trust_level, id')  # tuple for storing the User
 
 
 class User:
@@ -41,13 +41,13 @@ class User:
          7. id -> user id, if not provided it is created
          8. user_data -> named tuple, if it is not none the class is initialized with its values
     """
-    def __init__(self, name='', surname='', username='', organization='', mail='', pw='', trust=False, id=None, user_data=None):
+    def __init__(self, name='', surname='', username='', organization='', mail='', pw='', trust=False, doctor=False, id=None, user_data=None):
         if user_data is not None:
             self.name = user_data.name
             self.surname = user_data.surname
             self.organization = user_data.organization
             self.mail = user_data.mail
-            self.trust = user_data.trust
+            self.trust_level = user_data.trust_level
             self.id = user_data.id
             self.username = user_data.username
             self.salt = user_data.salt
@@ -64,7 +64,12 @@ class User:
             if pw is not None:
                 self.salt = str(uuid4().hex)
                 self.h_pw = hashlib.sha512((pw + self.salt).encode("utf-8")).hexdigest()
-            self.trust = trust
+            if trust:
+                self.trust_level = 1
+            elif doctor:
+                self.trust_level = 2
+            else:
+                self.trust_level = 0
 
     def __string__(self):
         return self.name + " " + self.surname
@@ -82,7 +87,7 @@ class User:
         return self.id
 
     def get_trust_level(self):  # get the trust level of the user
-        return self.trust
+        return self.trust_level
 
     def set_pw_hash(self, h_pw):
         self.h_pw = h_pw
@@ -97,6 +102,6 @@ class User:
             return False
 
     def get_user(self):  # get user as named tuple
-        user = namedtuple('UserTuple', 'name, surname, username, organization, mail, trust, id, salt')
-        return user(self.name, self.surname, self.username, self.organization, self.mail, self.trust, self.id, self.salt)
+        user = namedtuple('UserTuple', 'name, surname, username, organization, mail, trust_level, id, salt')
+        return user(self.name, self.surname, self.username, self.organization, self.mail, self.trust_level, self.id, self.salt)
 

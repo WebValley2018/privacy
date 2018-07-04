@@ -178,6 +178,7 @@ def query():
 
 @app.route("/admin")
 def adminPage():
+    print(database.check_admin_token(request.cookies.get("tovel_token_admin")))
     if database.check_admin_token(request.cookies.get("tovel_token_admin")):
         # If the user is logged in, let's display his personal page
         admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
@@ -229,7 +230,7 @@ def register_user():
         mail = request.form["mail"]
         trustlevel = int(request.form["trustlevel"])
         new_user_password = utilities.generate_password()
-        new_user = User(username=username, name=name, surname=surname, organization=organization, mail=mail, trust=trustlevel==1, doctor=trustlevel==2 pw=new_user_password)
+        new_user = User(username=username, name=name, surname=surname, organization=organization, mail=mail, trust=trustlevel if trustlevel < 2 else 0, doctor=True if trustlevel == 2 else False, pw=new_user_password)
         if database.register_user(new_user):
             ethereum.set_user_hash(new_user.get_id(), new_user.h_pw)
             registration_outcome = '''<div class="alert alert-success"
