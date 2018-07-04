@@ -268,11 +268,12 @@ class DB:
         self.cursor.execute("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = %s", (dataset_name,))
         new_data = []
         [new_data.append(d.decode('utf-8') if type(d) is bytes else d) for d in data]
-        dataset_name = dataset_name.decode('utf-8') if dataset_name is bytes else dataset_name
-        print(dataset_name)
+        if type(dataset_name) is bytes:
+            dataset_name = dataset_name.decode('utf-8')
         colonne = [row[3] for row in self.cursor.fetchall()[1:]]
         for idx, c in enumerate(colonne):
-            self.cursor.execute(f'''"UPDATE `{str(dataset_name)}` SET %s=%s WHERE _row_id=%s''', (c, str(data[idx]), str(row),))
+            print("UPDATE " + dataset_name + " SET " + c + " = %s WHERE _row_id = %s")
+            # self.cursor.execute("UPDATE " + dataset_name + " SET " + c + " = %s WHERE _row_id = %s", (str(data[idx]), str(row),))
             #self.cursor.execute("UPDATE " + str(dataset_name) + " SET " + str(c) + "=%s WHERE _row_id = %s", (str(data[idx]), str(row),))
         self.mariadb_connection.commit()
 

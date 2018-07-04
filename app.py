@@ -29,8 +29,16 @@ def mainPage():
     if database.check_token(request.cookies.get("tovel_token")):
         # If the user is logged in, let's display his personal page
         user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token"), False))
+        edit_table = '''<div class="card d-inline-block" style="width: 18rem; min-height: 10rem; margin: 1em;" >
+                            <div class="card-body">
+                              <h5 class="card-title">Edit Table</h5>
+                              <p class="card-text">Edit a Dataset</p>
+                              <a href="/choose-table" class="btn btn-primary">Edit</a>
+                            </div>
+                        </div>'''
         replace_list = {
-            "#Name" :  user.name + " " + user.surname
+            "#Name":  user.name + " " + user.surname,
+            "{{actions}}": edit_table if user.trust_level == 2 else ""
         }
         with open("static-assets/user.html") as f:
             html = f.read()
@@ -344,9 +352,8 @@ def adminLoginPage():
         resp = make_response(redirect("/admin?loginfailed"))  # Redirect to the homepage and display an error message
         return resp
 
-@app.route("/admin/edit-table/<dataset>")
+@app.route("/edit-table/<dataset>")
 def editableTable(dataset):
-    # admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
     user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token")))
     ds = database.get_dataset(dataset, user.get_trust_level())
     columns = '<th scope="col"></th>'
@@ -354,12 +361,12 @@ def editableTable(dataset):
         columns += '''<th scope="col">''' + c["title"] + '''</th>'''
     data = ''
     for idx, r in enumerate(ds["data"]):
-        data += f'<tr><td class="filterable-cell"><a href="/admin/edit-table/edit-row/{dataset}/{idx}"><i class="far fa-edit"></i></a></td>'
+        data += f'<tr><td class="filterable-cell"><a href="/edit-table/edit-row/{dataset}/{idx}"><i class="far fa-edit"></i></a></td>'
         for c in r:
             data += '''<td class="filterable-cell">''' + str(c) + "</td>"
         data += '</tr>'
     replace_list = {
-        # "#Name": admin.name + " " + admin.surname
+        "#Name": user.name + " " + user.surname,
         "#TableName": database.get_dataset_name(dataset, user.get_trust_level()).decode('utf-8'),
         "{{columns}}": columns,
         "{{content}}": data
@@ -371,9 +378,8 @@ def editableTable(dataset):
             html = html.replace(search, replace)
         return html
 
-@app.route("/admin/edit-table/edit-row/<dataset>/<row>", methods=["GET", "POST"])
+@app.route("/edit-table/edit-row/<dataset>/<row>", methods=["GET", "POST"])
 def editRow(dataset, row):
-    # admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
     user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token")))
     ds = database.get_dataset_row(dataset, int(row), user.get_trust_level())
     l = ds["columns"]
@@ -390,10 +396,10 @@ def editRow(dataset, row):
         [new_values.append(request.form[str(c)]) for c in l]
         # print(new_values)
         database.modify_row(dataset, new_values, row, user.get_trust_level())
-        return redirect(f"/admin/edit-table/edit-row/{dataset}/{row}")
+        return redirect(f"/edit-table/edit-row/{dataset}/{row}")
 
     replace_list = {
-        # "#Name": admin.name + " " + admin.surname
+        "#Name": user.name + " " + user.surname,
         "#TableName": database.get_dataset_name(dataset, user.get_trust_level()).decode('utf-8'),
         "#RowNumber": str(int(row) + 1),
         "#datasetid": dataset,
@@ -404,6 +410,29 @@ def editRow(dataset, row):
         for search, replace in replace_list.items():
             html = html.replace(search, replace)
         return html
+
+@app.route("/choose-table")
+def chooseTable():
+    if database.check_token(request.cookies.get("tovel_token")):
+        # If the user is logged in, let's display his personal page
+        user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token"), False))
+        datasets = database.get_datasets(user.trust_level)
+        buttons = ''
+        for d in datasets:
+            print(d)
+            buttons += f'''<a class="btn btn-primary btn-lg btn-block" href="/edit-table/{d["id"]}" role="button">{d['name']}</a>'''
+        replace_list = {
+            "#Name":  user.name + " " + user.surname,
+            "{{datasets}}": buttons
+        }
+        with open("static-assets/choose_table.html") as f:
+            html = f.read()
+            for search, replace in replace_list.items():
+                html = html.replace(search, replace)
+        return html
+    else:
+        resp = make_response(redirect("/"))
+        return resp  # Redirect to the /
 
 app.run(host='0.0.0.0', debug=True)  # to do: remove debug True in production
 
