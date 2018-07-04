@@ -223,11 +223,10 @@ class DB:
         self.cursor.execute("SELECT RequiredTrust FROM Datasets WHERE ID = %s", (dataset, ))
         return int(self.cursor.fetchall()[0][0])<=tl
 
-    def check_dataset_exsistence(self, dataset, trust_level):
-        if not self._can_load_ds(dataset, trust_level):
-            return None
+    def check_dataset_exsistence(self, dataset):
         self.cursor.execute("SELECT * FROM Datasets WHERE Name = %s;", (dataset,))
-        return len(self.cursor.fetchall()) == 1
+        res = self.cursor.fetchall()
+        return len(res) == 1
     
     def get_dataset(self, dataset_id, trust_level):
         if not self._can_load_ds(dataset_id, trust_level):
