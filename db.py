@@ -230,7 +230,7 @@ class DB:
         #print(self.cursor.fetchall())
         colonne = [{"title": row[3]} for row in self.cursor.fetchall()[1:]]
         self.cursor.execute("SELECT * FROM `"+str(dataset_name.decode('utf-8'))+"`;")
-        return {"data": [[str(j.decode("utf-8")) if type(j) is bytes else j for j in list(r)[1:]] for r in list(self.cursor)[1:]], "columns": colonne}
+        return {"data": [[(str(j.decode("utf-8")) if type(j) is bytes else j) for j in [n for n in list(r)[1:]]] for r in list(self.cursor)], "columns": colonne}
     
     def get_datasets(self):
         self.cursor.execute("SELECT Name, ID FROM Datasets")
