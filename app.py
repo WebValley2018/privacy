@@ -93,7 +93,10 @@ def changePassword():
             user_id = user.id
             #  Procedure for the regular user
             user.set_pw_hash(ethereum.get_user(database.get_userid_from_token(request.cookies.get("tovel_token"), False)).user_pwd_hash)
-            if user.verify_pw(request.form["old_password"]): #  If the saved password matches with the one provided by the user
+            if user.verify_pw(request.form["old_password"]) and user.verify_pw(request.form["password"]):
+                replace_list["{{outcome}}"] = '''<div class="alert alert-danger"
+                                                    role="alert">Please enter a new password and not the old one</div>'''
+            elif user.verify_pw(request.form["old_password"]): #  If the saved password matches with the one provided by the user
                 salt = str(uuid4().hex)
                 database.change_user_salt(user_id, salt)
                 #  Update the salt in DB
@@ -109,7 +112,10 @@ def changePassword():
         elif "tovel_token_admin" in request.cookies:
             replace_list["{{admin}}"] = "admin"
             #  Procedure for the admins
-            if database.change_admin_pwd(user, request.form["old_password"], request.form["password"]):
+            if database.change_admin_pwd(user, request.form["old_password"], request.form["password"]) == 0:
+                replace_list["{{outcome}}"] = '''<div class="alert alert-danger"
+                                            role="alert">Please enter a new password and not the old one</div>'''
+            elif database.change_admin_pwd(user, request.form["old_password"], request.form["password"]) == 2:
                 replace_list["{{outcome}}"] = '''<div class="alert alert-success"
                             role="alert">Password has been changed successfully</div>'''
             else:
@@ -190,7 +196,6 @@ def query():
 
 @app.route("/admin")
 def adminPage():
-    print(database.check_admin_token(request.cookies.get("tovel_token_admin")))
     if database.check_admin_token(request.cookies.get("tovel_token_admin")):
         # If the user is logged in, let's display his personal page
         admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
