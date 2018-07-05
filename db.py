@@ -30,6 +30,32 @@ class DB:
         8. register_user -> register new user in the db
         9. register_admin -> register new admin in the db
         10. check_admin -> check if admin with given username exists
+        11. register_admin -> register admin given an admin object
+        12. get_otp_key -> get otp key of admin
+        13. get_admin -> get admin object given the admin id
+        14. get_admin_id_from_username -> get the id of a user given the username
+        15. set_admin_token_ttl -> set the ttl of a admin token to 0, in order to make the session expire
+        16. check_admin_token -> check if admin token exists end if it's expired
+        17. register_admin_token -> insert new admin token in the database given token object
+        18. save_audit_transaction -> save a new audit transaction in the databse
+        19. get_userid_from_token -> give an active token find the user_id of the user, admin -> True if it's an admin Token
+        20. python_type_to_sql -> transforms the phython types to sql types
+        21. cast_python_type_for_sql -> cast phython types to sql types
+        22. _get_parameters_generate_table -> get parameters from general table
+        23. _sanitize_col_nam -> sanitaze name
+        24. import_excel -> import new exel file to database
+        25. change_admin_pwd -> set a new admin password hash
+        26. change_user_salt -> change the password salt of an user
+        27. _can_load_ds -> check if user with given trust level can have access to a database
+        28. check_dataset_exsistence -> check if database exists
+        29. get_dataset -> load a dataset from database given his id
+        30. get_datasets -> get all dataset of a user with given trust level
+        31. get_dataset_name -> get the name of al datset given his id and the trust level of the user
+        32. get_dataset_row -> get a row of a dataset given id and trust level
+        33. get_dataset_columns -> get names of columns of a datset given dataset id and trust level
+        34. modify_row -> modify row of a datset given dataset id and trust level
+        35. delete_row -> delete row of a datset given dataset id and trust level
+        36. new_row -> create new row of a datset given dataset id and trust level
 
     -INITIALIZATION:
         1. user -> user of db
