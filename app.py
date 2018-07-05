@@ -650,6 +650,6 @@ def deleteCookie():
     return resp
 
 
-app.run(host='0.0.0.0', debug=True)  # to do: remove debug True in production
+app.run(host='0.0.0.0')  # to do: remove debug True in production
 
 
