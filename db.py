@@ -13,6 +13,8 @@ from excel import Excel
 import mysql.connector as mariadb
 from user import User
 
+
+
 class DB:
     """
     CLASS DB FOR database integration
@@ -64,6 +66,7 @@ class DB:
         4. host -> host in db
     """
     def __init__(self, user='Tovel', password='tovelwaterdoggo', database='Tovel', host='192.168.210.173'):
+        self.database_name = database
         self.mariadb_connection = mariadb.connect(user=user, password=password, database=database, host=host)
         self.cursor = self.mariadb_connection.cursor()
 
@@ -239,14 +242,16 @@ class DB:
     
     def change_admin_pwd(self, admin, oldpwd, pwd):
         """This function changes admin's password given the old password and the new password. Returns True on success"""
-        if admin.verify_pw(oldpwd):
+        if admin.verify_pw(oldpwd) and admin.verify_pw(pwd):
+            return 0
+        elif admin.verify_pw(oldpwd):
             salt = str(uuid4().hex)
             hash_pw = hashlib.sha512((pwd + salt).encode("utf-8")).hexdigest()
             self.cursor.execute("UPDATE Administrators SET Salt = %s, Password = %s WHERE ID = %s", (salt, hash_pw, admin.id))
             self.mariadb_connection.commit()
-            return True
+            return 2
         else:
-            return False
+            return 1
     
     def change_user_salt(self, userid, salt):
         self.cursor.execute("UPDATE Users SET Salt = %s WHERE ID = %s", (salt, userid))
@@ -343,7 +348,7 @@ class DB:
             if not i == len(data) - 1:
                 val += ','
         new_row_id = str(uuid4())
-        print(f"INSERT INTO `{dataset_name}` VALUES ({val});", (new_row_id, ) + data)
+        # print(f"INSERT INTO `{dataset_name}` VALUES ({val});", (new_row_id, ) + data)
         self.cursor.execute(f"INSERT INTO `{dataset_name}` VALUES ({val}) ;", (new_row_id, ) + data)
         self.mariadb_connection.commit()
 

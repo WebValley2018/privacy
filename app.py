@@ -1,9 +1,9 @@
 from uuid import uuid4
 import hashlib
 import os
-from json import dumps
+from json import dumps, loads
 
-from flask import Flask, request, make_response, redirect
+from flask import Flask, request, make_response, redirect, abort
 from middleware import healthCheckMW
 from werkzeug.utils import secure_filename
 from db import DB
@@ -12,13 +12,22 @@ from auth_token import Token
 from user import User
 import utilities
 from time import strftime, gmtime, time
+from qr import QR
+import pyotp
+from admin import Admin
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = "uploads"
 
 
-database = DB()
-ethereum=Ethereum()
+if not os.path.isfile("config.json"):
+    database = None
+    ethereum = None
+else:
+    with open("config.json") as f:
+        dati = loads(f.read())
+    database = DB(user=dati["user"], password=dati["password"], database=dati["database"], host=dati["host"])
+    ethereum=Ethereum(providerAddress=dati["provider"])
 
 app.wsgi_app = healthCheckMW(app.wsgi_app)
 # Main page
@@ -26,7 +35,9 @@ app.wsgi_app = healthCheckMW(app.wsgi_app)
 
 @app.route("/")
 def mainPage():
-    if database.check_token(request.cookies.get("tovel_token")):
+    if database is None:
+        return make_response(redirect("/set-up"))
+    elif database.check_token(request.cookies.get("tovel_token")):
         # If the user is logged in, let's display his personal page
         last_pwd_change = ethereum.get_user_last_pwd_change(database.get_userid_from_token(request.cookies.get("tovel_token")))
         if time() - (0 if last_pwd_change is None else last_pwd_change) > 30*24*60*60:
@@ -101,7 +112,10 @@ def changePassword():
             user_id = user.id
             #  Procedure for the regular user
             user.set_pw_hash(ethereum.get_user(database.get_userid_from_token(request.cookies.get("tovel_token"), False)).user_pwd_hash)
-            if user.verify_pw(request.form["old_password"]): #  If the saved password matches with the one provided by the user
+            if user.verify_pw(request.form["old_password"]) and user.verify_pw(request.form["password"]):
+                replace_list["{{outcome}}"] = '''<div class="alert alert-danger"
+                                                    role="alert">Please enter a new password and not the old one</div>'''
+            elif user.verify_pw(request.form["old_password"]): #  If the saved password matches with the one provided by the user
                 salt = str(uuid4().hex)
                 database.change_user_salt(user_id, salt)
                 #  Update the salt in DB
@@ -115,8 +129,12 @@ def changePassword():
                                     role="alert">Please check your old password</div>'''
 
         elif "tovel_token_admin" in request.cookies:
+            replace_list["{{admin}}"] = "/admin"
             #  Procedure for the admins
-            if database.change_admin_pwd(user, request.form["old_password"], request.form["password"]):
+            if database.change_admin_pwd(user, request.form["old_password"], request.form["password"]) == 0:
+                replace_list["{{outcome}}"] = '''<div class="alert alert-danger"
+                                            role="alert">Please enter a new password and not the old one</div>'''
+            elif database.change_admin_pwd(user, request.form["old_password"], request.form["password"]) == 2:
                 replace_list["{{outcome}}"] = '''<div class="alert alert-success"
                             role="alert">Password has been changed successfully</div>'''
             else:
@@ -197,7 +215,6 @@ def query():
 
 @app.route("/admin")
 def adminPage():
-    print(database.check_admin_token(request.cookies.get("tovel_token_admin")))
     if database.check_admin_token(request.cookies.get("tovel_token_admin")):
 
         # last_pwd_change = ethereum.get_user_last_pwd_change(database.get_admin_id_from_username(request.cookies.get("tovel_token")))
@@ -511,6 +528,126 @@ def chooseTable():
     else:
         resp = make_response(redirect("/"))
         return resp  # Redirect to the /
+
+@app.route("/set-up", methods=["POST", "GET"])
+def setUp():
+    global database
+    global ethereum
+    if database is not None:
+        abort(403)
+    replace_list={
+        "{{outcome}}": ''
+    }
+    if request.method == "POST":
+        #  Setting up
+        config_data = {
+            "user": request.form["dbusername"],
+            "password": request.form["dbpassword"],
+            "host": request.form["dbserver"],
+            "database": request.form["dbname"],
+            "provider": request.form["ethprovider"]
+        }
+        config_file = open("config.json", 'w')
+        config_file.write(dumps(config_data))
+        config_file.close()
+        import mysql.connector as mariadb
+        db = mariadb.connect(user=config_data["user"], password=config_data["password"], host=config_data["host"])
+        cursor = db.cursor()
+        # Create DB
+        cursor.execute(f"CREATE DATABASE {config_data['database']} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
+        cursor.execute(f"USE {config_data['database']};")
+        db.commit()
+        # Create tables
+        queries="""CREATE TABLE `Administrators` (`ID` text COLLATE utf8_bin NOT NULL,`Username` text COLLATE utf8_bin NOT NULL,`Name` text COLLATE utf8_bin NOT NULL,`Surname` text COLLATE utf8_bin NOT NULL,`Password` text COLLATE utf8_bin NOT NULL,`Salt` text COLLATE utf8_bin NOT NULL,`OTPKey` text COLLATE utf8_bin NOT NULL);
+CREATE TABLE `AdminToken` (`TokenValue` text COLLATE utf8_bin NOT NULL,`TTL` int(11) NOT NULL,`CreationDate` bigint(20) NOT NULL,`User` text COLLATE utf8_bin NOT NULL);
+CREATE TABLE `Audit` (`Transaction` text COLLATE utf8_bin NOT NULL,`Timestamp` int(11) NOT NULL);
+CREATE TABLE `Datasets` (`Name` text COLLATE utf8_bin NOT NULL,`ID` text COLLATE utf8_bin NOT NULL,`RequiredTrust` int(11) DEFAULT NULL);
+CREATE TABLE `Token` (`TokenValue` text COLLATE utf8_bin NOT NULL,`TTL` int(11) NOT NULL,`CreationDate` bigint(20) NOT NULL,`User` text COLLATE utf8_bin NOT NULL);
+CREATE TABLE `Users` (`Username` text COLLATE utf8_bin NOT NULL,`Name` text COLLATE utf8_bin NOT NULL,`Surname` text COLLATE utf8_bin NOT NULL,`Mail` text COLLATE utf8_bin NOT NULL,`ID` text COLLATE utf8_bin NOT NULL,`Salt` text COLLATE utf8_bin NOT NULL,`Organization` text COLLATE utf8_bin NOT NULL,`TrustLevel` smallint(6) NOT NULL);""".split(";\n")
+        for query in queries:
+            cursor.execute(query)
+        db.commit()
+        # Create admin
+        name = request.form["name"]
+        surname = request.form["surname"]
+        password = request.form["password"]
+        username = request.form["username"]
+        admin = Admin(username=username, name=name, surname=surname, pw=password)
+        cursor.execute("INSERT INTO Administrators VALUES (%s, %s, %s, %s, %s, %s, %s);", (
+            admin.id, admin.username, admin.name, admin.surname, admin.h_pw, admin.salt, admin.otp_key,))
+        resp = make_response(redirect("/get-totp-key"))  # Redirect to the homepage
+        resp.set_cookie("admin_id", admin.id)  # Set the cookie
+        db.commit()
+        with open("config.json") as f:
+            dati = loads(f.read())
+        database = DB(user=dati["user"], password=dati["password"], database=dati["database"], host=dati["host"])
+        ethereum = Ethereum(providerAddress=dati["provider"])
+        return resp
+
+    with open("static-assets/set_up.html") as page:
+        html = page.read()
+    for search, replace in replace_list.items():
+        html = html.replace(search, replace)
+    return html
+
+@app.route("/admin/new-admin", methods=['POST', 'GET'])
+def newAdmin():
+    if not database.check_admin_token(request.cookies.get("tovel_token_admin")):
+        resp = make_response(redirect("/admin?sessionexpired"))
+        resp.set_cookie('tovel_token_admin', '', expires=0)
+        return resp
+    admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
+
+    response = ''
+    if request.method == "POST":
+        print(dumps(request.form))
+        name = request.form["name"]
+        surname = request.form["surname"]
+        password = request.form["password"]
+        username = request.form["username"]
+        if not database.check_admin(username):
+            admin = Admin(username=username, name=name, surname=surname, pw=password)
+            database.register_admin(admin)
+            resp = make_response(redirect("/get-totp-key"))  # Redirect to the homepage
+            resp.set_cookie("admin_id", admin.id)  # Set the cookie
+            return resp
+        else:
+            response = '''<div class="alert alert-danger"
+                                    role="alert">Admin with the same username already exists</div>'''
+            pass
+
+    replace_list = {
+        "#Name": admin.name + " " + admin.surname,
+        "{{outcome}}": response
+    }
+
+    with open("static-assets/new_admin.html") as f:
+        html = f.read()
+        for search, replace in replace_list.items():
+            html = html.replace(search, replace)
+    return html
+
+@app.route("/get-totp-key")
+def getQrCode():
+    admin_id = request.cookies.get("admin_id")
+    admin = database.get_admin(admin_id)
+    url = pyotp.totp.TOTP(admin.otp_key).provisioning_uri(admin.username, issuer_name="Tovel")
+    qr = QR(url).get_svg()
+    replace_list = {
+        "{{qrcode}}": qr
+    }
+
+    with open("static-assets/get_qrcode.html") as f:
+        html = f.read()
+        for search, replace in replace_list.items():
+            html = html.replace(search, replace)
+    return html
+
+@app.route("/delete-cookie")
+def deleteCookie():
+    resp = make_response(redirect("/admin"))
+    resp.set_cookie('admin_id', expires=0)
+    return resp
 
 
 app.run(host='0.0.0.0', debug=True)  # to do: remove debug True in production

@@ -48,3 +48,9 @@ class Admin(User):
     def verify_otp(self, otp):
         return self.totp.verify(otp)
 
+    def new_opt_key(self, key):
+        self.otp_key = key
+        self.totp = pyotp.TOTP(self.otp_key)
+
+
+
