@@ -83,7 +83,7 @@ def changePassword():
         resp.set_cookie('tovel_token_admin', '', expires=0)
         return resp
     
-    must_change_banner = '<div class="alert alert-info" role="alert">In order to access to your account you must change your password</div>'
+    must_change_banner = '<div class="alert alert-info" role="alert">In order to access your account you must change your password</div>'
 
     #  Get user data
     user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token"), False)) if "tovel_token" in request.cookies else database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
