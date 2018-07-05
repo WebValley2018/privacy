@@ -294,3 +294,11 @@ class Ethereum:
                 "timestamp": int(time())
             })).transact()
             self.w3.eth.waitForTransactionReceipt(tx_hash)
+    
+    def get_user_last_pwd_change(self, user_id):
+        database.cursor.execute("SELECT * FROM Audit ORDER BY Timestamp DESC WHERE Transaction LIKE \"p%\";")
+        for event in database.cursor.fetchall():
+            event_data = loads(self.get_event(event[0]))
+            if event_data["user"] == user_id:
+                return event_data["timestamp"]
+        return None

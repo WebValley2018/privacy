@@ -11,7 +11,7 @@ from ethereum import Ethereum
 from auth_token import Token
 from user import User
 import utilities
-from time import strftime, gmtime
+from time import strftime, gmtime, time
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = "uploads"
@@ -28,6 +28,11 @@ app.wsgi_app = healthCheckMW(app.wsgi_app)
 def mainPage():
     if database.check_token(request.cookies.get("tovel_token")):
         # If the user is logged in, let's display his personal page
+        last_pwd_change = ethereum.get_user_last_pwd_change(database.get_userid_from_token(request.cookies.get("tovel_token")))
+        if time() - (time() if last_pwd_change is None else last_pwd_change) > 5*60:
+            resp = make_response(redirect("/change-password?mustchange"))
+            return resp
+        
         user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token"), False))
         edit_table = '''<div class="card d-inline-block" style="width: 18rem; min-height: 10rem; margin: 1em;" >
                             <div class="card-body">
@@ -78,13 +83,16 @@ def changePassword():
         resp.set_cookie('tovel_token_admin', '', expires=0)
         return resp
     
+    must_change_banner = '<div class="alert alert-info" role="alert">In order to access to your account you must change your password</div>'
+
     #  Get user data
     user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token"), False)) if "tovel_token" in request.cookies else database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
     replace_list = {
         "#Name": user.name + " " + user.surname,
         "{{outcome}}": '',
         "{{security}}": "3" if "tovel_token" in request.cookies else "4",
-        "{{admin}}": '' if not "tovel_token_admin" in request.cookies else "admin"
+        "{{admin}}": '' if not "tovel_token_admin" in request.cookies else "admin",
+        "{{pwdchange}}": must_change_banner if "mustchange" in request.args else ''
     }
 
     if request.method == "POST":
@@ -191,6 +199,12 @@ def query():
 def adminPage():
     print(database.check_admin_token(request.cookies.get("tovel_token_admin")))
     if database.check_admin_token(request.cookies.get("tovel_token_admin")):
+
+        last_pwd_change = ethereum.get_user_last_pwd_change(database.get_admin_id_from_username(request.cookies.get("tovel_token")))
+        if time() - (time() if last_pwd_change is None else last_pwd_change) > 5*60:
+            resp = make_response(redirect("/change-password?mustchange"))
+            return resp
+        
         # If the user is logged in, let's display his personal page
         admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
         replace_list = {
