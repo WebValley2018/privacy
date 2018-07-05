@@ -13,6 +13,8 @@ from excel import Excel
 import mysql.connector as mariadb
 from user import User
 
+
+
 class DB:
     """
     CLASS DB FOR database integration
@@ -37,7 +39,8 @@ class DB:
         3. database -> db
         4. host -> host in db
     """
-    def __init__(self, user='Tovel', password='tovelwaterdoggo', database='Tovel', host='192.168.210.173'):
+    def __init__(self, user='Tovel', password='tovelwaterdoggo', database='Tovel1', host='192.168.210.173'):
+        self.database_name = database
         self.mariadb_connection = mariadb.connect(user=user, password=password, database=database, host=host)
         self.cursor = self.mariadb_connection.cursor()
 

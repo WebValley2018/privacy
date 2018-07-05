@@ -12,12 +12,18 @@ from auth_token import Token
 from user import User
 import utilities
 from time import strftime, gmtime
+from qr import QR
+import pyotp
+from admin import Admin
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = "uploads"
 
 
-database = DB()
+try:
+    database = DB()
+except:
+    database = None
 ethereum=Ethereum()
 
 app.wsgi_app = healthCheckMW(app.wsgi_app)
@@ -26,7 +32,9 @@ app.wsgi_app = healthCheckMW(app.wsgi_app)
 
 @app.route("/")
 def mainPage():
-    if database.check_token(request.cookies.get("tovel_token")):
+    if database is None:
+        pass
+    elif database.check_token(request.cookies.get("tovel_token")):
         # If the user is logged in, let's display his personal page
         user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token"), False))
         edit_table = '''<div class="card d-inline-block" style="width: 18rem; min-height: 10rem; margin: 1em;" >
@@ -503,6 +511,71 @@ def chooseTable():
     else:
         resp = make_response(redirect("/"))
         return resp  # Redirect to the /
+
+@app.route("/set-up")
+def setUp():
+    with open("static-assets/set_up.html") as f:
+        html = f.read()
+    return html
+
+@app.route("/admin/new-admin", methods=['POST', 'GET'])
+def newAdmin():
+    if not database.check_admin_token(request.cookies.get("tovel_token_admin")):
+        resp = make_response(redirect("/admin?sessionexpired"))
+        resp.set_cookie('tovel_token_admin', '', expires=0)
+        return resp
+    admin = database.get_admin(database.get_userid_from_token(request.cookies.get("tovel_token_admin"), True))
+
+    response = ''
+    if request.method == "POST":
+        print(dumps(request.form))
+        name = request.form["name"]
+        surname = request.form["surname"]
+        password = request.form["password"]
+        username = request.form["username"]
+        if not database.check_admin(username):
+            admin = Admin(username=username, name=name, surname=surname, pw=password)
+            database.register_admin(admin)
+            resp = make_response(redirect("/get-totp-key"))  # Redirect to the homepage
+            resp.set_cookie("admin_id", admin.id)  # Set the cookie
+            return resp
+        else:
+            response = '''<div class="alert alert-danger"
+                                    role="alert">Admin with the same username already exists</div>'''
+            pass
+
+    replace_list = {
+        "#Name": admin.name + " " + admin.surname,
+        "{{outcome}}": response
+    }
+
+    with open("static-assets/new_admin.html") as f:
+        html = f.read()
+        for search, replace in replace_list.items():
+            html = html.replace(search, replace)
+    return html
+
+@app.route("/get-totp-key")
+def getQrCode():
+    admin_id = request.cookies.get("admin_id")
+    admin = database.get_admin(admin_id)
+    url = pyotp.totp.TOTP(admin.otp_key).provisioning_uri(admin.username, issuer_name="Tovel")
+    qr = QR(url).get_svg()
+    replace_list = {
+        "{{qrcode}}": qr
+    }
+
+    with open("static-assets/get_qrcode.html") as f:
+        html = f.read()
+        for search, replace in replace_list.items():
+            html = html.replace(search, replace)
+    return html
+
+@app.route("/delete-cookie")
+def deleteCookie():
+    resp = make_response(redirect("/admin"))
+    resp.set_cookie('admin_id', expires=0)
+    return resp
 
 
 app.run(host='0.0.0.0', debug=True)  # to do: remove debug True in production

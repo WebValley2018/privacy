@@ -43,7 +43,7 @@ class Transaction:
                 kind = kind.replace("#adminid", admin.name + " " + admin.surname)
             else:
                 kind = kind.replace("#adminid", "")
-        if self.id[0] in ["l", 'x', 'q', 'p'] and "status" in self.data.keys():
+        elif self.id[0] in ["l", 'x', 'q', 'p'] and "status" in self.data.keys():
             user = database.get_user_from_id(self.data["user_id"])
             kind = kind.replace("#userid", user.name + " " + user.surname + " from " + user.organization)
         elif self.id[0] in ["l", 'x', 'q', 'p'] and "user" in self.data.keys():
