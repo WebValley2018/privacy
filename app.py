@@ -29,7 +29,7 @@ def mainPage():
     if database.check_token(request.cookies.get("tovel_token")):
         # If the user is logged in, let's display his personal page
         last_pwd_change = ethereum.get_user_last_pwd_change(database.get_userid_from_token(request.cookies.get("tovel_token")))
-        if time() - (0 if last_pwd_change is None else last_pwd_change) > 5*60:
+        if time() - (0 if last_pwd_change is None else last_pwd_change) > 30*24*60*60:
             resp = make_response(redirect("/change-password?mustchange"))
             return resp
         
@@ -201,7 +201,7 @@ def adminPage():
     if database.check_admin_token(request.cookies.get("tovel_token_admin")):
 
         last_pwd_change = ethereum.get_user_last_pwd_change(database.get_admin_id_from_username(request.cookies.get("tovel_token")))
-        if time() - (0 if last_pwd_change is None else last_pwd_change) > 5*60:
+        if time() - (0 if last_pwd_change is None else last_pwd_change) > 30*24*60*60:
             resp = make_response(redirect("/change-password?mustchange"))
             return resp
         
