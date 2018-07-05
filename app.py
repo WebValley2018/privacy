@@ -3,7 +3,7 @@ import hashlib
 import os
 from json import dumps, loads
 
-from flask import Flask, request, make_response, redirect
+from flask import Flask, request, make_response, redirect, abort
 from middleware import healthCheckMW
 from werkzeug.utils import secure_filename
 from db import DB
@@ -26,7 +26,7 @@ if not os.path.isfile("config.json"):
 else:
     with open("config.json") as f:
         dati = loads(f.read())
-    database = DB(user=dati["user"], password=dati["user"], database=dati["database"], host=dati["host"])
+    database = DB(user=dati["user"], password=dati["password"], database=dati["database"], host=dati["host"])
     ethereum=Ethereum(providerAddress=dati["provider"])
 
 app.wsgi_app = healthCheckMW(app.wsgi_app)
@@ -36,7 +36,7 @@ app.wsgi_app = healthCheckMW(app.wsgi_app)
 @app.route("/")
 def mainPage():
     if database is None:
-        pass
+        return make_response(redirect("/set-up"))
     elif database.check_token(request.cookies.get("tovel_token")):
         # If the user is logged in, let's display his personal page
         user = database.get_user_from_id(database.get_userid_from_token(request.cookies.get("tovel_token"), False))
@@ -121,7 +121,7 @@ def changePassword():
                                     role="alert">Please check your old password</div>'''
 
         elif "tovel_token_admin" in request.cookies:
-            replace_list["{{admin}}"] = "admin"
+            replace_list["{{admin}}"] = "/admin"
             #  Procedure for the admins
             if database.change_admin_pwd(user, request.form["old_password"], request.form["password"]) == 0:
                 replace_list["{{outcome}}"] = '''<div class="alert alert-danger"
@@ -515,10 +515,65 @@ def chooseTable():
         resp = make_response(redirect("/"))
         return resp  # Redirect to the /
 
-@app.route("/set-up")
+@app.route("/set-up", methods=["POST", "GET"])
 def setUp():
-    with open("static-assets/set_up.html") as f:
-        html = f.read()
+    global database
+    global ethereum
+    if database is not None:
+        abort(403)
+    replace_list={
+        "{{outcome}}": ''
+    }
+    if request.method == "POST":
+        #  Setting up
+        config_data = {
+            "user": request.form["dbusername"],
+            "password": request.form["dbpassword"],
+            "host": request.form["dbserver"],
+            "database": request.form["dbname"],
+            "provider": request.form["ethprovider"]
+        }
+        config_file = open("config.json", 'w')
+        config_file.write(dumps(config_data))
+        config_file.close()
+        import mysql.connector as mariadb
+        db = mariadb.connect(user=config_data["user"], password=config_data["password"], host=config_data["host"])
+        cursor = db.cursor()
+        # Create DB
+        cursor.execute(f"CREATE DATABASE {config_data['database']} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
+        cursor.execute(f"USE {config_data['database']};")
+        db.commit()
+        # Create tables
+        queries="""CREATE TABLE `Administrators` (`ID` text COLLATE utf8_bin NOT NULL,`Username` text COLLATE utf8_bin NOT NULL,`Name` text COLLATE utf8_bin NOT NULL,`Surname` text COLLATE utf8_bin NOT NULL,`Password` text COLLATE utf8_bin NOT NULL,`Salt` text COLLATE utf8_bin NOT NULL,`OTPKey` text COLLATE utf8_bin NOT NULL);
+CREATE TABLE `AdminToken` (`TokenValue` text COLLATE utf8_bin NOT NULL,`TTL` int(11) NOT NULL,`CreationDate` bigint(20) NOT NULL,`User` text COLLATE utf8_bin NOT NULL);
+CREATE TABLE `Audit` (`Transaction` text COLLATE utf8_bin NOT NULL,`Timestamp` int(11) NOT NULL);
+CREATE TABLE `Datasets` (`Name` text COLLATE utf8_bin NOT NULL,`ID` text COLLATE utf8_bin NOT NULL,`RequiredTrust` int(11) DEFAULT NULL);
+CREATE TABLE `Token` (`TokenValue` text COLLATE utf8_bin NOT NULL,`TTL` int(11) NOT NULL,`CreationDate` bigint(20) NOT NULL,`User` text COLLATE utf8_bin NOT NULL);
+CREATE TABLE `Users` (`Username` text COLLATE utf8_bin NOT NULL,`Name` text COLLATE utf8_bin NOT NULL,`Surname` text COLLATE utf8_bin NOT NULL,`Mail` text COLLATE utf8_bin NOT NULL,`ID` text COLLATE utf8_bin NOT NULL,`Salt` text COLLATE utf8_bin NOT NULL,`Organization` text COLLATE utf8_bin NOT NULL,`TrustLevel` smallint(6) NOT NULL);""".split(";\n")
+        for query in queries:
+            cursor.execute(query)
+        db.commit()
+        # Create admin
+        name = request.form["name"]
+        surname = request.form["surname"]
+        password = request.form["password"]
+        username = request.form["username"]
+        admin = Admin(username=username, name=name, surname=surname, pw=password)
+        cursor.execute("INSERT INTO Administrators VALUES (%s, %s, %s, %s, %s, %s, %s);", (
+            admin.id, admin.username, admin.name, admin.surname, admin.h_pw, admin.salt, admin.otp_key,))
+        resp = make_response(redirect("/get-totp-key"))  # Redirect to the homepage
+        resp.set_cookie("admin_id", admin.id)  # Set the cookie
+        db.commit()
+        with open("config.json") as f:
+            dati = loads(f.read())
+        database = DB(user=dati["user"], password=dati["password"], database=dati["database"], host=dati["host"])
+        ethereum = Ethereum(providerAddress=dati["provider"])
+        return resp
+
+    with open("static-assets/set_up.html") as page:
+        html = page.read()
+    for search, replace in replace_list.items():
+        html = html.replace(search, replace)
     return html
 
 @app.route("/admin/new-admin", methods=['POST', 'GET'])
