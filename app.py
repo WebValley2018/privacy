@@ -1,7 +1,7 @@
 from uuid import uuid4
 import hashlib
 import os
-from json import dumps
+from json import dumps, loads
 
 from flask import Flask, request, make_response, redirect
 from middleware import healthCheckMW
@@ -20,11 +20,14 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = "uploads"
 
 
-try:
-    database = DB()
-except:
+if not os.path.isfile("config.json"):
     database = None
-ethereum=Ethereum()
+    ethereum = None
+else:
+    with open("config.json") as f:
+        dati = loads(f.read())
+    database = DB(user=dati["user"], password=dati["user"], database=dati["database"], host=dati["host"])
+    ethereum=Ethereum(providerAddress=dati["provider"])
 
 app.wsgi_app = healthCheckMW(app.wsgi_app)
 # Main page
